@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { createPlaylist } from '@/services/musicService';
+import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
 import { getAISongRecommendations } from '@/services/aiService';
 import { savePlaylist, getPlaylistHistory } from '@/services/playlistHistoryService';
 import ChatInterface from '@/components/ChatInterface';
 import PlaylistHistory from '@/components/PlaylistHistory';
+import SpotifyConnect from '@/components/SpotifyConnect';
 import { Song } from '@/components/SongList';
 import { PlaylistHistoryItem } from '@/components/chat/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,9 +26,20 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [playlistHistory, setPlaylistHistory] = useState<PlaylistHistoryItem[]>([]);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
   const { toast } = useToast();
 
-  // Playlist-Historie beim Laden abrufen
+  useEffect(() => {
+    setSpotifyConnected(isSpotifyConnected());
+    
+    const checkSpotifyStatus = () => {
+      setSpotifyConnected(isSpotifyConnected());
+    };
+    
+    window.addEventListener('focus', checkSpotifyStatus);
+    return () => window.removeEventListener('focus', checkSpotifyStatus);
+  }, []);
+
   useEffect(() => {
     const fetchPlaylistHistory = async () => {
       try {
@@ -48,7 +59,6 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      // Using the AI service instead of the direct music service
       const recommendedSongs = await getAISongRecommendations(moodInput, genreInput);
       setSongs(recommendedSongs);
       setIsLoading(false);
@@ -68,23 +78,22 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      // Playlist erstellen
       const url = await createPlaylist(songs, mood, genre);
       setPlaylistUrl(url);
       
-      // Playlist speichern
       const playlistName = `${mood}${genre ? ` ${genre}` : ''} Playlist`;
       const savedPlaylist = await savePlaylist(playlistName, mood, genre, songs, url);
       
-      // Playlist-Historie aktualisieren
       setPlaylistHistory(prev => [savedPlaylist, ...prev]);
       
       setIsLoading(false);
       setStep(Step.PlaylistCreated);
       
       toast({
-        title: "Playlist erstellt",
-        description: "Deine Playlist wurde erfolgreich erstellt und gespeichert.",
+        title: spotifyConnected ? "Spotify-Playlist erstellt" : "Playlist erstellt",
+        description: spotifyConnected 
+          ? "Deine Playlist wurde erfolgreich in deiner Spotify-Bibliothek erstellt." 
+          : "Deine Playlist wurde erfolgreich erstellt und gespeichert.",
       });
     } catch (error) {
       console.error('Error creating playlist:', error);
@@ -111,7 +120,6 @@ const Index = () => {
     setSongs(playlist.songs);
     setPlaylistUrl(playlist.spotifyUrl || '');
     
-    // Wenn die Playlist keine Songs hat, öffnen wir nicht direkt die Playlist-Ansicht
     setStep(playlist.songs.length > 0 ? Step.PlaylistCreated : Step.MoodInput);
     setActiveTab("chat");
     
@@ -123,7 +131,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-moodyfy-dark to-black">
-      {/* Decorative elements */}
       <div className="fixed -z-10 top-20 left-10 w-64 h-64 bg-moodyfy-blue/20 rounded-full blur-3xl"></div>
       <div className="fixed -z-10 bottom-20 right-10 w-64 h-64 bg-moodyfy-pink/20 rounded-full blur-3xl"></div>
       
@@ -141,6 +148,8 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="chat">
+            <SpotifyConnect />
+            
             <ChatInterface
               onSubmitMood={handleMoodSubmit}
               onConfirmPlaylist={handleConfirmPlaylist}
