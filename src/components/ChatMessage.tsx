@@ -35,7 +35,7 @@ const ChatMessage = ({ content, type, isLoading = false }: ChatMessageProps) => 
         
         <div className="flex-1 space-y-2">
           <div className="text-sm font-medium">
-            {isUser ? 'You' : 'Moodyfy'}
+            {isUser ? 'You' : 'Moodyfy AI'}
           </div>
           
           <div className="prose prose-invert max-w-none">

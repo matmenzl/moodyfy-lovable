@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { getSongRecommendations, createPlaylist } from '@/services/musicService';
+import { createPlaylist } from '@/services/musicService';
+import { getAISongRecommendations } from '@/services/aiService';
 import ChatInterface from '@/components/ChatInterface';
 import { Song } from '@/components/SongList';
 
@@ -26,7 +27,8 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      const recommendedSongs = await getSongRecommendations(moodInput, genreInput);
+      // Using the AI service instead of the direct music service
+      const recommendedSongs = await getAISongRecommendations(moodInput, genreInput);
       setSongs(recommendedSongs);
       setIsLoading(false);
       setStep(Step.SongRecommendations);
