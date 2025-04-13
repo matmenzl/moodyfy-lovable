@@ -78,9 +78,8 @@ const PlaylistHistory: React.FC<PlaylistHistoryProps> = ({ playlists, onOpenPlay
                       <span className="sr-only">In Spotify öffnen</span>
                     </Button>
                   )}
-                </Button>
-              </TableCell>
-            </TableRow>
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
