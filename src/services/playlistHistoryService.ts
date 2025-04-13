@@ -3,6 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { PlaylistHistoryItem } from '@/components/chat/types';
 import { Song } from '@/components/SongList';
 
+// Local storage key for playlists
+const PLAYLISTS_STORAGE_KEY = 'moodyfy_playlists';
+
+// Helper function to get playlists from local storage
+const getLocalPlaylists = (): PlaylistHistoryItem[] => {
+  const stored = localStorage.getItem(PLAYLISTS_STORAGE_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+// Helper function to save playlists to local storage
+const saveLocalPlaylists = (playlists: PlaylistHistoryItem[]): void => {
+  localStorage.setItem(PLAYLISTS_STORAGE_KEY, JSON.stringify(playlists));
+};
+
 export const savePlaylist = async (
   name: string, 
   mood: string, 
@@ -11,38 +25,24 @@ export const savePlaylist = async (
   spotifyUrl?: string
 ): Promise<PlaylistHistoryItem> => {
   try {
-    // For anonymous/demo usage, we'll use a fixed UUID
-    // In a real application with authentication, you would get this from the authenticated user
-    const anonymousUserId = '00000000-0000-0000-0000-000000000000';
-    
-    const playlistData = {
+    // Create a new playlist item
+    const newPlaylist: PlaylistHistoryItem = {
+      id: Date.now().toString(), // Simple ID generation using timestamp
       name,
       mood,
-      genres: genre ? [genre] : [],
-      spotify_url: spotifyUrl,
-      description: `Eine Playlist für die Stimmung "${mood}"${genre ? ` mit ${genre} Musik` : ''}.`,
-      user_id: anonymousUserId
+      genre,
+      songs,
+      createdAt: new Date().toISOString(),
+      spotifyUrl
     };
     
-    // In Supabase speichern
-    const { data, error } = await supabase
-      .from('playlists')
-      .insert(playlistData)
-      .select()
-      .single();
-      
-    if (error) throw error;
+    // In development/demo mode, save to local storage
+    const currentPlaylists = getLocalPlaylists();
+    currentPlaylists.unshift(newPlaylist); // Add to beginning of array
+    saveLocalPlaylists(currentPlaylists);
     
-    // Playlist-Objekt zurückgeben
-    return {
-      id: data.id,
-      name: data.name,
-      mood: data.mood || mood,
-      genre: genre,
-      songs: songs,
-      createdAt: data.created_at,
-      spotifyUrl: data.spotify_url
-    };
+    console.log('Playlist saved to local storage:', newPlaylist);
+    return newPlaylist;
   } catch (error) {
     console.error('Fehler beim Speichern der Playlist:', error);
     throw error;
@@ -51,27 +51,9 @@ export const savePlaylist = async (
 
 export const getPlaylistHistory = async (): Promise<PlaylistHistoryItem[]> => {
   try {
-    // For anonymous/demo usage, we'll use a fixed UUID
-    const anonymousUserId = '00000000-0000-0000-0000-000000000000';
-    
-    const { data, error } = await supabase
-      .from('playlists')
-      .select('*')
-      .eq('user_id', anonymousUserId)
-      .order('created_at', { ascending: false });
-      
-    if (error) throw error;
-    
-    // Playlist-Historie mit den notwendigen Informationen zurückgeben
-    return data.map(item => ({
-      id: item.id,
-      name: item.name,
-      mood: item.mood || '',
-      genre: item.genres && item.genres.length > 0 ? item.genres[0] : undefined,
-      songs: [], // Wir laden die Songs nicht im initialen Abruf
-      createdAt: item.created_at,
-      spotifyUrl: item.spotify_url
-    }));
+    // In development/demo mode, retrieve from local storage
+    const playlists = getLocalPlaylists();
+    return playlists;
   } catch (error) {
     console.error('Fehler beim Abrufen der Playlist-Historie:', error);
     return [];
