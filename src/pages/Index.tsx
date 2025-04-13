@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
-import MoodForm from '@/components/MoodForm';
-import SongList, { Song } from '@/components/SongList';
-import PlaylistCreated from '@/components/PlaylistCreated';
-import { getSongRecommendations, createPlaylist } from '@/services/musicService';
 import { useToast } from '@/components/ui/use-toast';
+import { getSongRecommendations, createPlaylist } from '@/services/musicService';
+import ChatInterface from '@/components/ChatInterface';
+import { Song } from '@/components/SongList';
 
 enum Step {
   MoodInput,
@@ -69,53 +68,25 @@ const Index = () => {
     setPlaylistUrl('');
   };
 
-  const renderStepContent = () => {
-    switch (step) {
-      case Step.MoodInput:
-        return <MoodForm onSubmit={handleMoodSubmit} />;
-      case Step.SongRecommendations:
-        return (
-          <SongList 
-            songs={songs} 
-            mood={mood} 
-            genre={genre} 
-            onConfirm={handleConfirmPlaylist} 
-            onReject={handleReset} 
-          />
-        );
-      case Step.PlaylistCreated:
-        return <PlaylistCreated playlistUrl={playlistUrl} onReset={handleReset} />;
-      default:
-        return <MoodForm onSubmit={handleMoodSubmit} />;
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-black via-moodyfy-dark to-black">
-      <div className="w-full max-w-md relative">
-        {/* Decorative elements */}
-        <div className="absolute -z-10 top-20 -left-32 w-64 h-64 bg-moodyfy-blue/20 rounded-full blur-3xl"></div>
-        <div className="absolute -z-10 bottom-20 -right-32 w-64 h-64 bg-moodyfy-pink/20 rounded-full blur-3xl"></div>
-        
-        {/* Content */}
-        <div className="relative z-10">
-          {renderStepContent()}
-        </div>
-        
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center rounded-xl z-50">
-            <div className="flex flex-col items-center">
-              <div className="flex space-x-2 mb-4">
-                <div className="w-3 h-3 bg-moodyfy-blue rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                <div className="w-3 h-3 bg-moodyfy-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-3 h-3 bg-moodyfy-pink rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-              <p className="text-sm text-gray-300">Finding the perfect beats...</p>
-            </div>
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-black via-moodyfy-dark to-black">
+      {/* Decorative elements */}
+      <div className="fixed -z-10 top-20 left-10 w-64 h-64 bg-moodyfy-blue/20 rounded-full blur-3xl"></div>
+      <div className="fixed -z-10 bottom-20 right-10 w-64 h-64 bg-moodyfy-pink/20 rounded-full blur-3xl"></div>
+      
+      {/* Chat Interface */}
+      <ChatInterface
+        onSubmitMood={handleMoodSubmit}
+        onConfirmPlaylist={handleConfirmPlaylist}
+        onRejectPlaylist={handleReset}
+        songs={songs}
+        mood={mood}
+        genre={genre}
+        playlistUrl={playlistUrl}
+        step={step === Step.MoodInput ? 'MoodInput' : step === Step.SongRecommendations ? 'SongRecommendations' : 'PlaylistCreated'}
+        isLoading={isLoading}
+        onReset={handleReset}
+      />
     </div>
   );
 };
