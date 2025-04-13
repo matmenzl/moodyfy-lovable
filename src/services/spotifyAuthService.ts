@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Spotify API Endpoints
 const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 // Diese Werte sollten in Produktionsumgebungen über Umgebungsvariablen bereitgestellt werden
 const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6'; // ⬅️ Updated with the provided Client ID
@@ -69,7 +70,8 @@ export const redirectToSpotifyLogin = () => {
     client_id: SPOTIFY_CLIENT_ID,
     scope: SCOPES,
     redirect_uri: REDIRECT_URI,
-    state: state
+    state: state,
+    show_dialog: 'true' // Force showing the Spotify authorization dialog
   });
   
   window.location.href = `${SPOTIFY_AUTH_URL}?${queryParams.toString()}`;
@@ -78,15 +80,28 @@ export const redirectToSpotifyLogin = () => {
 // Token vom Callback-Code abrufen
 export const getTokenFromCode = async (code: string): Promise<boolean> => {
   try {
-    const response = await fetch('/api/spotify-token', {
+    // We'll use the browser fetch API directly for token exchange
+    const tokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirectUri: REDIRECT_URI })
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Base64 encode the client_id:client_secret as per Spotify's requirements
+        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:`)}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI
+      }).toString()
     });
     
-    if (!response.ok) throw new Error('Token request failed');
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.json();
+      console.error('Spotify token error:', errorData);
+      throw new Error(`Token request failed: ${errorData.error_description || errorData.error}`);
+    }
     
-    const data = await response.json();
+    const data = await tokenResponse.json();
     saveSpotifyToken(data.access_token, data.refresh_token, data.expires_in);
     return true;
   } catch (error) {
@@ -138,4 +153,42 @@ export const spotifyApiRequest = async (
 // Benutzerprofil abrufen
 export const getSpotifyUserProfile = async () => {
   return spotifyApiRequest('/me');
+};
+
+// Token erneuern, wenn es abgelaufen ist
+export const refreshSpotifyToken = async (): Promise<boolean> => {
+  try {
+    const { refreshToken } = getSpotifyToken();
+    
+    if (!refreshToken) {
+      throw new Error('Kein Refresh-Token vorhanden');
+    }
+    
+    const response = await fetch(SPOTIFY_TOKEN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:`)}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken
+      }).toString()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Token-Aktualisierung fehlgeschlagen');
+    }
+    
+    const data = await response.json();
+    
+    // Wenn ein neues Refresh-Token zurückgegeben wird, speichere dieses
+    const newRefreshToken = data.refresh_token || refreshToken;
+    saveSpotifyToken(data.access_token, newRefreshToken, data.expires_in);
+    
+    return true;
+  } catch (error) {
+    console.error('Fehler bei der Token-Aktualisierung:', error);
+    return false;
+  }
 };

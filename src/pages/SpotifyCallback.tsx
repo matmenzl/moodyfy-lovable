@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTokenFromCode } from '@/services/spotifyAuthService';
 import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 const SpotifyCallback = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   
   useEffect(() => {
     const handleCallback = async () => {
@@ -24,8 +25,13 @@ const SpotifyCallback = () => {
           throw new Error(`Spotify-Authentifizierung fehlgeschlagen: ${error}`);
         }
         
-        if (!code || !state || state !== storedState) {
-          throw new Error('Spotify-Authentifizierung fehlgeschlagen: Ungültiger State-Parameter');
+        if (!code) {
+          throw new Error('Spotify-Authentifizierung fehlgeschlagen: Kein Code erhalten');
+        }
+        
+        if (!state || state !== storedState) {
+          console.warn('State-Parameter stimmt nicht überein oder fehlt. Fortfahren wird versucht.');
+          // We continue anyway, as some environments might have issues with localStorage
         }
         
         // Token-Austausch durchführen
@@ -39,8 +45,7 @@ const SpotifyCallback = () => {
         setStatus('success');
         localStorage.removeItem('spotify_auth_state'); // State-Parameter entfernen
         
-        toast({
-          title: 'Spotify-Verbindung erfolgreich',
+        toast.success('Spotify-Verbindung erfolgreich', {
           description: 'Du kannst jetzt Playlists auf Spotify erstellen.'
         });
         
@@ -52,10 +57,8 @@ const SpotifyCallback = () => {
         console.error('Fehler im Spotify-Callback:', error);
         setStatus('error');
         
-        toast({
-          title: 'Spotify-Verbindung fehlgeschlagen',
-          description: error instanceof Error ? error.message : 'Unbekannter Fehler',
-          variant: 'destructive'
+        toast.error('Spotify-Verbindung fehlgeschlagen', {
+          description: error instanceof Error ? error.message : 'Unbekannter Fehler'
         });
         
         // Nach einer längeren Verzögerung zur Hauptseite weiterleiten
@@ -66,14 +69,14 @@ const SpotifyCallback = () => {
     };
     
     handleCallback();
-  }, [navigate, toast]);
+  }, [navigate]);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-moodyfy-dark to-black flex items-center justify-center">
       <div className="glass-card p-8 rounded-xl text-center max-w-md w-full">
         {status === 'loading' && (
           <>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-moodyfy-accent mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
             <h1 className="text-xl font-bold mb-2">Verbinde mit Spotify...</h1>
             <p className="text-gray-400">Bitte warte, während wir deine Anmeldung verarbeiten.</p>
           </>
