@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTokenFromCode } from '@/services/spotifyAuthService';
+import { getTokenFromCode } from '@/services/spotify/tokenService';
 import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
 

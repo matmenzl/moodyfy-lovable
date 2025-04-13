@@ -1,6 +1,6 @@
 
 import { Song } from '@/components/SongList';
-import { spotifyApiRequest } from './spotifyAuthService';
+import { spotifyApiRequest } from './spotify/apiService';
 
 // Suche nach Songs in Spotify
 export const searchSpotifyTracks = async (
@@ -65,3 +65,4 @@ export const createSpotifyPlaylist = async (
     throw error;
   }
 };
+
