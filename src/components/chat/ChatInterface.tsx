@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Music } from "lucide-react";
 import ChatHeader from './ChatHeader';
 import ChatInputArea from './ChatInputArea';
 import ChatMessageList from './ChatMessageList';
