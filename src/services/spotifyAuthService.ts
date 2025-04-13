@@ -6,7 +6,7 @@ const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 
 // Diese Werte sollten in Produktionsumgebungen über Umgebungsvariablen bereitgestellt werden
-const SPOTIFY_CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID'; // ⬅️ Hier müssen Sie Ihre eigene Client ID eintragen
+const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6'; // ⬅️ Updated with the provided Client ID
 const REDIRECT_URI = `${window.location.origin}/spotify-callback`;
 const SCOPES = [
   'playlist-modify-public',
