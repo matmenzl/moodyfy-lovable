@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
 
 const SpotifyCallback = () => {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'redirect_error'>('loading');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   const { toast: uiToast } = useToast();
   
@@ -21,6 +22,13 @@ const SpotifyCallback = () => {
         const storedState = localStorage.getItem('spotify_auth_state');
         
         console.log("Spotify callback received. Code exists:", !!code, "Error:", error);
+        
+        // Check for specific Spotify errors
+        if (error === 'invalid_client') {
+          setStatus('redirect_error');
+          setErrorMessage('Die Spotify Client-ID ist nicht mit dieser Redirect-URI registriert. Bitte aktualisiere die Redirect-URI im Spotify Developer Dashboard.');
+          return;
+        }
         
         // Fehler oder CSRF-Schutz prüfen
         if (error) {
@@ -63,6 +71,12 @@ const SpotifyCallback = () => {
       } catch (error) {
         console.error('Fehler im Spotify-Callback:', error);
         setStatus('error');
+        
+        if (error instanceof Error) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage('Unbekannter Fehler bei der Spotify-Authentifizierung');
+        }
         
         toast.error('Spotify-Verbindung fehlgeschlagen', {
           description: error instanceof Error ? error.message : 'Unbekannter Fehler'
@@ -109,7 +123,36 @@ const SpotifyCallback = () => {
               </svg>
             </div>
             <h1 className="text-xl font-bold mb-2">Verbindung fehlgeschlagen</h1>
-            <p className="text-gray-400">Es gab ein Problem bei der Spotify-Authentifizierung. Du wirst zur App weitergeleitet...</p>
+            <p className="text-gray-400">{errorMessage || 'Es gab ein Problem bei der Spotify-Authentifizierung. Du wirst zur App weitergeleitet...'}</p>
+          </>
+        )}
+        
+        {status === 'redirect_error' && (
+          <>
+            <div className="bg-amber-500/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <svg className="h-8 w-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold mb-2">Konfigurationsproblem</h1>
+            <p className="text-gray-400 mb-4">{errorMessage}</p>
+            <div className="text-sm text-left bg-gray-800/50 p-4 rounded-lg mb-4">
+              <p className="font-medium mb-2">So behebst du das Problem:</p>
+              <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                <li>Öffne das <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">Spotify Developer Dashboard</a></li>
+                <li>Wähle deine App aus</li>
+                <li>Klicke auf "Edit Settings"</li>
+                <li>Füge diese URI als "Redirect URI" hinzu: <code className="bg-gray-700 px-2 py-1 rounded text-green-300">{window.location.origin}/spotify-callback</code></li>
+                <li>Speichere die Änderungen</li>
+                <li>Versuche die Verbindung erneut</li>
+              </ol>
+            </div>
+            <button 
+              onClick={() => navigate('/')} 
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors w-full"
+            >
+              Zurück zur App
+            </button>
           </>
         )}
       </div>
