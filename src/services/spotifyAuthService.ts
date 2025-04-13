@@ -7,8 +7,11 @@ const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
 const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 // Diese Werte sollten in Produktionsumgebungen über Umgebungsvariablen bereitgestellt werden
-const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6'; // ⬅️ Updated with the provided Client ID
+const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6';
+
+// Determine the correct redirect URI based on the environment
 const REDIRECT_URI = `${window.location.origin}/spotify-callback`;
+
 const SCOPES = [
   'playlist-modify-public',
   'playlist-modify-private',
@@ -65,6 +68,8 @@ export const redirectToSpotifyLogin = () => {
   const state = generateRandomString(16);
   localStorage.setItem('spotify_auth_state', state);
   
+  console.log("Redirecting to Spotify with redirect URI:", REDIRECT_URI);
+  
   const queryParams = new URLSearchParams({
     response_type: 'code',
     client_id: SPOTIFY_CLIENT_ID,
@@ -80,6 +85,8 @@ export const redirectToSpotifyLogin = () => {
 // Token vom Callback-Code abrufen
 export const getTokenFromCode = async (code: string): Promise<boolean> => {
   try {
+    console.log("Getting token from code with redirect URI:", REDIRECT_URI);
+    
     // We'll use the browser fetch API directly for token exchange
     const tokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',

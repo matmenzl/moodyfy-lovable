@@ -20,6 +20,8 @@ const SpotifyCallback = () => {
         const error = urlParams.get('error');
         const storedState = localStorage.getItem('spotify_auth_state');
         
+        console.log("Spotify callback received. Code exists:", !!code, "Error:", error);
+        
         // Fehler oder CSRF-Schutz prüfen
         if (error) {
           throw new Error(`Spotify-Authentifizierung fehlgeschlagen: ${error}`);
@@ -30,11 +32,15 @@ const SpotifyCallback = () => {
         }
         
         if (!state || state !== storedState) {
-          console.warn('State-Parameter stimmt nicht überein oder fehlt. Fortfahren wird versucht.');
+          console.warn('State-Parameter stimmt nicht überein oder fehlt:', { 
+            receivedState: state, 
+            storedState 
+          });
           // We continue anyway, as some environments might have issues with localStorage
         }
         
         // Token-Austausch durchführen
+        console.log("Attempting to exchange code for token");
         const success = await getTokenFromCode(code);
         
         if (!success) {
@@ -42,6 +48,7 @@ const SpotifyCallback = () => {
         }
         
         // Authentifizierung erfolgreich
+        console.log("Authentication successful");
         setStatus('success');
         localStorage.removeItem('spotify_auth_state'); // State-Parameter entfernen
         
