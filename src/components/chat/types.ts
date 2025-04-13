@@ -15,4 +15,15 @@ export interface ChatContextType {
   isLoading: boolean;
   currentStep: 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
   aiModel?: string;
+  playlistHistory?: PlaylistHistoryItem[];
+}
+
+export interface PlaylistHistoryItem {
+  id: string;
+  name: string;
+  mood: string;
+  genre?: string;
+  songs: Song[];
+  createdAt: string;
+  spotifyUrl?: string;
 }
