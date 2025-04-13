@@ -11,12 +11,17 @@ export const savePlaylist = async (
   spotifyUrl?: string
 ): Promise<PlaylistHistoryItem> => {
   try {
+    // For anonymous/demo usage, we'll use a fixed user_id
+    // In a real application with authentication, you would get this from the authenticated user
+    const userId = 'anonymous-user';
+    
     const playlistData = {
       name,
       mood,
       genres: genre ? [genre] : [],
       spotify_url: spotifyUrl,
-      description: `Eine Playlist für die Stimmung "${mood}"${genre ? ` mit ${genre} Musik` : ''}.`
+      description: `Eine Playlist für die Stimmung "${mood}"${genre ? ` mit ${genre} Musik` : ''}.`,
+      user_id: userId // Add the required user_id field
     };
     
     // In Supabase speichern
@@ -46,9 +51,14 @@ export const savePlaylist = async (
 
 export const getPlaylistHistory = async (): Promise<PlaylistHistoryItem[]> => {
   try {
+    // For anonymous/demo usage, we'll use a fixed user_id
+    // In a real application with authentication, you would get this from the authenticated user
+    const userId = 'anonymous-user';
+    
     const { data, error } = await supabase
       .from('playlists')
       .select('*')
+      .eq('user_id', userId) // Filter to only show playlists for our demo user
       .order('created_at', { ascending: false });
       
     if (error) throw error;
