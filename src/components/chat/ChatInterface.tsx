@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Music } from "lucide-react";
+import { Music, Sparkles } from "lucide-react";
 import ChatHeader from './ChatHeader';
 import ChatInputArea from './ChatInputArea';
 import ChatMessageList from './ChatMessageList';
@@ -61,9 +61,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           id: 'songs',
           content: (
             <div className="space-y-4">
-              <p>Based on your <span className="text-moodyfy-blue">{mood}</span> mood{genre && <> and <span className="text-moodyfy-pink">{genre}</span> preference</>}, here are some songs I think you'll enjoy:</p>
+              <p>
+                Based on your <span className="text-moodyfy-blue">{mood}</span> mood
+                {genre && <> and <span className="text-moodyfy-pink">{genre}</span> preference</>}, 
+                here are some AI-recommended songs I think you'll enjoy:
+              </p>
               
               <div className="glass-card p-4 rounded-xl">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium">Song Recommendations</h3>
+                  <div className="flex items-center text-xs text-moodyfy-accent">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    <span>AI Generated</span>
+                  </div>
+                </div>
                 <ul className="space-y-2">
                   {songs.map((song, index) => (
                     <li key={index} className="flex items-center p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
@@ -183,7 +194,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Add loading message
     setMessages(prev => [...prev, {
       id: 'loading',
-      content: <p>Finding the perfect songs for your mood...</p>,
+      content: <p>Finding the perfect songs for your mood using AI...</p>,
       type: 'assistant',
     }]);
     

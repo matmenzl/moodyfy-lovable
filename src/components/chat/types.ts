@@ -14,4 +14,5 @@ export interface ChatContextType {
   addUserMessage: (content: string) => void;
   isLoading: boolean;
   currentStep: 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
+  aiModel?: string;
 }
