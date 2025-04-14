@@ -1,7 +1,8 @@
+
 import { Song } from '@/components/SongList';
 import { createSpotifyPlaylist } from './spotifyPlaylistService';
 import { hasValidSpotifyToken } from './spotify/tokenService';
-import { redirectToSpotifyLogin } from './spotify/authService';
+import { redirectToSpotifyLogin, isSpotifyConnected } from './spotify/authService';
 
 // This would be replaced with an actual API call in a production app
 export const getSongRecommendations = (mood: string, genre: string): Promise<Song[]> => {

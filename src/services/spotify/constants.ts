@@ -8,6 +8,8 @@ export const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 export const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6';
 
 // Determine the correct redirect URI based on the environment
+// This dynamically sets the redirect URI based on the current URL
+// It works for both local development and deployed environments
 export const REDIRECT_URI = `${window.location.origin}/spotify-callback`;
 
 export const SCOPES = [
