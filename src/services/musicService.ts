@@ -1,3 +1,4 @@
+
 import { Song } from '@/components/SongList';
 import { createSpotifyPlaylist } from './spotifyPlaylistService';
 import { hasValidSpotifyToken } from './spotify/tokenService';
@@ -120,3 +121,6 @@ export const createPlaylist = async (songs: Song[], mood: string, genre: string)
 export const connectToSpotify = (): void => {
   redirectToSpotifyLogin();
 };
+
+// Re-export isSpotifyConnected from authService to maintain compatibility
+export { isSpotifyConnected } from './spotify/authService';
