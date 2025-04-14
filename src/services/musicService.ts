@@ -1,4 +1,3 @@
-
 import { Song } from '@/components/SongList';
 import { createSpotifyPlaylist } from './spotifyPlaylistService';
 import { hasValidSpotifyToken } from './spotify/tokenService';
@@ -115,11 +114,6 @@ export const createPlaylist = async (songs: Song[], mood: string, genre: string)
     console.error('Error creating playlist:', error);
     throw error;
   }
-};
-
-// Prüfen, ob Spotify verbunden ist
-export const isSpotifyConnected = (): boolean => {
-  return hasValidSpotifyToken();
 };
 
 // Spotify-Verbindung initiieren
