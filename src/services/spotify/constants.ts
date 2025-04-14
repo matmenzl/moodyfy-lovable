@@ -6,6 +6,7 @@ export const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 // These values should be in Productionsumgebungen über Umgebungsvariablen bereitgestellt werden
 export const SPOTIFY_CLIENT_ID = '28fc9dbfac7742a8bbc1de49306da7a6';
+export const SPOTIFY_CLIENT_SECRET = ''; // Dieses Feld muss mit dem Client Secret aus dem Spotify Dashboard gefüllt werden
 
 // Determine the correct redirect URI based on the environment
 // This dynamically sets the redirect URI based on the current URL

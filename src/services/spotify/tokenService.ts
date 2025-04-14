@@ -1,6 +1,6 @@
 
 // Importing constants
-import { SPOTIFY_TOKEN_URL, SPOTIFY_CLIENT_ID, REDIRECT_URI } from './constants';
+import { SPOTIFY_TOKEN_URL, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI } from './constants';
 
 // Types for token data
 interface SpotifyTokenData {
@@ -48,13 +48,19 @@ export const getTokenFromCode = async (code: string): Promise<boolean> => {
   try {
     console.log("Getting token from code with redirect URI:", REDIRECT_URI);
     
-    // We'll use the browser fetch API directly for token exchange
+    // Überprüfen, ob ein Client Secret vorhanden ist
+    if (!SPOTIFY_CLIENT_SECRET) {
+      console.error('Spotify Client Secret ist nicht konfiguriert. Token-Austausch nicht möglich.');
+      throw new Error('Spotify Client Secret ist nicht konfiguriert');
+    }
+    
+    // Verwenden der Authorization header mit Base64-encodiertem client_id:client_secret
     const tokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        // Base64 encode the client_id:client_secret as per Spotify's requirements
-        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:`)}`
+        // Korrekte Base64-Kodierung mit Client ID und Secret
+        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
@@ -87,11 +93,17 @@ export const refreshSpotifyToken = async (): Promise<boolean> => {
       throw new Error('Kein Refresh-Token vorhanden');
     }
     
+    // Überprüfen, ob ein Client Secret vorhanden ist
+    if (!SPOTIFY_CLIENT_SECRET) {
+      console.error('Spotify Client Secret ist nicht konfiguriert. Token-Erneuerung nicht möglich.');
+      throw new Error('Spotify Client Secret ist nicht konfiguriert');
+    }
+    
     const response = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:`)}`
+        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
