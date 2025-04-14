@@ -3,14 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
 import { getAISongRecommendations } from '@/services/aiService';
-import { savePlaylist, getPlaylistHistory } from '@/services/playlistHistoryService';
+import { savePlaylist, getPlaylistHistory, isAuthenticated } from '@/services/playlistHistoryService';
 import ChatInterface from '@/components/ChatInterface';
 import PlaylistHistory from '@/components/PlaylistHistory';
 import SpotifyConnect from '@/components/SpotifyConnect';
 import { Song } from '@/components/SongList';
 import { PlaylistHistoryItem } from '@/components/chat/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music, History } from "lucide-react";
+import { Music, History, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from '@/integrations/supabase/client';
 
 enum Step {
   MoodInput,
@@ -30,31 +32,54 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [playlistHistory, setPlaylistHistory] = useState<PlaylistHistoryItem[]>([]);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [userAuthenticated, setUserAuthenticated] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     setSpotifyConnected(isSpotifyConnected());
+    
+    // Set up authentication listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUserAuthenticated(!!session);
+      
+      // Refresh playlist history when auth state changes
+      if (session) {
+        fetchPlaylistHistory();
+      }
+    });
+    
+    // Initial auth check
+    const checkAuth = async () => {
+      const authenticated = await isAuthenticated();
+      setUserAuthenticated(authenticated);
+    };
+    checkAuth();
     
     const checkSpotifyStatus = () => {
       setSpotifyConnected(isSpotifyConnected());
     };
     
     window.addEventListener('focus', checkSpotifyStatus);
-    return () => window.removeEventListener('focus', checkSpotifyStatus);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('focus', checkSpotifyStatus);
+    };
   }, []);
 
   useEffect(() => {
-    const fetchPlaylistHistory = async () => {
-      try {
-        const history = await getPlaylistHistory();
-        setPlaylistHistory(history);
-      } catch (error) {
-        console.error('Fehler beim Laden der Playlist-Historie:', error);
-      }
-    };
+    if (userAuthenticated !== null) {
+      fetchPlaylistHistory();
+    }
+  }, [userAuthenticated]);
 
-    fetchPlaylistHistory();
-  }, []);
+  const fetchPlaylistHistory = async () => {
+    try {
+      const history = await getPlaylistHistory();
+      setPlaylistHistory(history);
+    } catch (error) {
+      console.error('Fehler beim Laden der Playlist-Historie:', error);
+    }
+  };
 
   const handleMoodSubmit = async (moodInput: string, genreInput: string) => {
     setMood(moodInput);
@@ -142,12 +167,43 @@ const Index = () => {
     });
   };
 
+  const handleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Abgemeldet",
+      description: "Du wurdest erfolgreich abgemeldet."
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-moodyfy-dark to-black">
       <div className="fixed -z-10 top-20 left-10 w-64 h-64 bg-moodyfy-blue/20 rounded-full blur-3xl"></div>
       <div className="fixed -z-10 bottom-20 right-10 w-64 h-64 bg-moodyfy-pink/20 rounded-full blur-3xl"></div>
       
       <div className="container max-w-4xl px-4 mx-auto pt-8">
+        {/* Auth Button */}
+        <div className="flex justify-end mb-4">
+          {userAuthenticated ? (
+            <Button variant="outline" className="bg-transparent border-white/20" onClick={handleLogout}>
+              Abmelden
+            </Button>
+          ) : (
+            <Button className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" onClick={handleLogin}>
+              <LogIn className="h-4 w-4 mr-2" />
+              Anmelden
+            </Button>
+          )}
+        </div>
+        
         <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 mb-8">
             <TabsTrigger value="chat" className="flex items-center space-x-2">
@@ -180,6 +236,19 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="history">
+            {userAuthenticated === false && (
+              <div className="text-center p-8 mb-4">
+                <LogIn className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium">Anmelden für Playlist-Historie</h3>
+                <p className="text-sm text-gray-400 mt-2 mb-4">
+                  Bitte melde dich an, um deine gespeicherten Playlists zu sehen und mehr Features zu nutzen.
+                </p>
+                <Button className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" onClick={handleLogin}>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Anmelden
+                </Button>
+              </div>
+            )}
             <PlaylistHistory 
               playlists={playlistHistory} 
               onOpenPlaylist={handleOpenPlaylist} 
