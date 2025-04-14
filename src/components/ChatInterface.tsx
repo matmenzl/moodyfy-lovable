@@ -10,6 +10,8 @@ interface ChatInterfaceWrapperProps {
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   songs: Song[];
+  addedSongs?: Song[];
+  notFoundSongs?: Song[];
   mood: string;
   genre: string;
   playlistUrl: string;

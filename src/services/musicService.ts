@@ -3,6 +3,7 @@ import { Song } from '@/components/SongList';
 import { createSpotifyPlaylist } from './spotifyPlaylistService';
 import { hasValidSpotifyToken } from './spotify/tokenService';
 import { redirectToSpotifyLogin, isSpotifyConnected } from './spotify/authService';
+import { useToast } from '@/components/ui/use-toast';
 
 // This would be replaced with an actual API call in a production app
 export const getSongRecommendations = (mood: string, genre: string): Promise<Song[]> => {
@@ -91,7 +92,7 @@ export const getSongRecommendations = (mood: string, genre: string): Promise<Son
 };
 
 // Playlist erstellen (mit Spotify-Integration wenn verfügbar)
-export const createPlaylist = async (songs: Song[], mood: string, genre: string): Promise<string> => {
+export const createPlaylist = async (songs: Song[], mood: string, genre: string): Promise<{ url: string; addedSongs: Song[]; notFoundSongs: Song[] }> => {
   try {
     // Prüfen, ob Spotify-Authentifizierung vorhanden ist
     if (hasValidSpotifyToken()) {
@@ -99,15 +100,23 @@ export const createPlaylist = async (songs: Song[], mood: string, genre: string)
       const playlistName = `${mood}${genre ? ` ${genre}` : ''} Playlist`;
       const description = `Eine Playlist für die Stimmung "${mood}"${genre ? ` mit ${genre} Musik` : ''}.`;
       
-      const { playlistUrl } = await createSpotifyPlaylist(playlistName, description, songs);
-      return playlistUrl;
+      const { playlistUrl, addedSongs, notFoundSongs } = await createSpotifyPlaylist(playlistName, description, songs);
+      return { 
+        url: playlistUrl, 
+        addedSongs, 
+        notFoundSongs 
+      };
     } else {
       // Wenn kein Spotify-Token vorhanden ist, geben wir eine Mockup-URL zurück
       console.log('Kein Spotify-Token vorhanden. Verwende Mockup-URL.');
       return new Promise((resolve) => {
         // Simulating API response delay
         setTimeout(() => {
-          resolve("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M");
+          resolve({
+            url: "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
+            addedSongs: songs,
+            notFoundSongs: []
+          });
         }, 2000); // Simulating response time
       });
     }

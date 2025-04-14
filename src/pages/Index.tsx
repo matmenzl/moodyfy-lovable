@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
@@ -23,6 +24,8 @@ const Index = () => {
   const [genre, setGenre] = useState('');
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlistUrl, setPlaylistUrl] = useState('');
+  const [addedSongs, setAddedSongs] = useState<Song[]>([]);
+  const [notFoundSongs, setNotFoundSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [playlistHistory, setPlaylistHistory] = useState<PlaylistHistoryItem[]>([]);
@@ -78,8 +81,10 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      const url = await createPlaylist(songs, mood, genre);
+      const { url, addedSongs: added, notFoundSongs: notFound } = await createPlaylist(songs, mood, genre);
       setPlaylistUrl(url);
+      setAddedSongs(added);
+      setNotFoundSongs(notFound);
       
       const playlistName = `${mood}${genre ? ` ${genre}` : ''} Playlist`;
       const savedPlaylist = await savePlaylist(playlistName, mood, genre, songs, url);
@@ -89,10 +94,14 @@ const Index = () => {
       setIsLoading(false);
       setStep(Step.PlaylistCreated);
       
+      const notFoundCount = notFound.length;
+      
       toast({
         title: spotifyConnected ? "Spotify-Playlist erstellt" : "Playlist erstellt",
         description: spotifyConnected 
-          ? "Deine Playlist wurde erfolgreich in deiner Spotify-Bibliothek erstellt." 
+          ? notFoundCount > 0 
+            ? `Playlist erstellt mit ${added.length} von ${songs.length} Songs. ${notFoundCount} Song(s) konnten nicht gefunden werden.` 
+            : "Alle Songs wurden erfolgreich zur Playlist hinzugefügt."
           : "Deine Playlist wurde erfolgreich erstellt und gespeichert.",
       });
     } catch (error) {
@@ -112,6 +121,8 @@ const Index = () => {
     setGenre('');
     setSongs([]);
     setPlaylistUrl('');
+    setAddedSongs([]);
+    setNotFoundSongs([]);
   };
 
   const handleOpenPlaylist = (playlist: PlaylistHistoryItem) => {
@@ -119,6 +130,8 @@ const Index = () => {
     setGenre(playlist.genre || '');
     setSongs(playlist.songs);
     setPlaylistUrl(playlist.spotifyUrl || '');
+    setAddedSongs(playlist.songs); // Assuming all songs were added in history item
+    setNotFoundSongs([]);
     
     setStep(playlist.songs.length > 0 ? Step.PlaylistCreated : Step.MoodInput);
     setActiveTab("chat");
@@ -155,6 +168,8 @@ const Index = () => {
               onConfirmPlaylist={handleConfirmPlaylist}
               onRejectPlaylist={handleReset}
               songs={songs}
+              addedSongs={addedSongs}
+              notFoundSongs={notFoundSongs}
               mood={mood}
               genre={genre}
               playlistUrl={playlistUrl}
