@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
@@ -197,8 +196,10 @@ const Index = () => {
               Abmelden
             </Button>
           ) : (
-            <Button className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" onClick={handleLogin}>
-              <LogIn className="h-4 w-4 mr-2" />
+            <Button 
+              className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" 
+              onClick={handleLogin}
+            >
               Anmelden
             </Button>
           )}
@@ -217,7 +218,7 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="chat">
-            <SpotifyConnect />
+            {userAuthenticated && <SpotifyConnect />}
             
             <ChatInterface
               onSubmitMood={handleMoodSubmit}

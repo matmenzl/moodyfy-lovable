@@ -2,14 +2,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { connectToSpotify, isSpotifyConnected } from '@/services/musicService';
-import { Music, LogIn } from 'lucide-react';
+import { Music, Link2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const SpotifyConnect = () => {
+  const handleConnectClick = async () => {
+    // If not logged in, first initiate Google login
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    } else {
+      // User is logged in, connect Spotify
+      connectToSpotify();
+    }
+  };
+  
   const isConnected = isSpotifyConnected();
   
-  const handleConnectClick = () => {
-    connectToSpotify();
-  };
+  // Only show SpotifyConnect if not connected
+  if (isConnected) return null;
   
   return (
     <div className="glass-card p-6 rounded-xl mb-6 text-center">
@@ -18,24 +35,20 @@ const SpotifyConnect = () => {
       </div>
       
       <h3 className="text-lg font-semibold mb-2">
-        {isConnected ? 'Mit Spotify verbunden' : 'Verbinde dich mit Spotify'}
+        Spotify verbinden
       </h3>
       
       <p className="text-sm text-gray-400 mb-4">
-        {isConnected 
-          ? 'Erstelle direkt Playlists in deiner Spotify-Bibliothek.'
-          : 'Verbinde dein Spotify-Konto, um Playlists direkt in deiner Bibliothek zu erstellen.'}
+        Verbinde dein Spotify-Konto, um Playlists direkt in deiner Bibliothek zu erstellen.
       </p>
       
-      {!isConnected && (
-        <Button 
-          onClick={handleConnectClick}
-          className="bg-green-500 hover:bg-green-600 transition-colors w-full"
-        >
-          <LogIn className="w-4 h-4 mr-2" />
-          Mit Spotify verbinden
-        </Button>
-      )}
+      <Button 
+        onClick={handleConnectClick}
+        className="bg-green-500 hover:bg-green-600 transition-colors w-full"
+      >
+        <Link2 className="w-4 h-4 mr-2" />
+        Verbinden
+      </Button>
     </div>
   );
 };
