@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client';
+import { redirectToSpotifyLogin, logoutFromSpotify, isSpotifyConnected } from '@/services/spotifyAuthService';
 import { useToast } from '@/components/ui/use-toast';
+import { Music } from 'lucide-react';
 
 interface AuthButtonProps {
   isAuthenticated: boolean;
@@ -10,34 +11,33 @@ interface AuthButtonProps {
 
 const AuthButton: React.FC<AuthButtonProps> = ({ isAuthenticated }) => {
   const { toast } = useToast();
+  const isConnected = isSpotifyConnected();
 
-  const handleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin
-      }
-    });
+  const handleLogin = () => {
+    redirectToSpotifyLogin();
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    logoutFromSpotify();
     toast({
       title: "Abgemeldet",
-      description: "Du wurdest erfolgreich abgemeldet."
+      description: "Du wurdest erfolgreich von Spotify abgemeldet."
     });
+    // Force page reload to update state
+    window.location.reload();
   };
 
-  return isAuthenticated ? (
+  return isConnected ? (
     <Button variant="outline" className="bg-transparent border-white/20" onClick={handleLogout}>
-      Abmelden
+      Von Spotify abmelden
     </Button>
   ) : (
     <Button 
-      className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" 
+      className="bg-green-500 hover:bg-green-600/80" 
       onClick={handleLogin}
     >
-      Anmelden
+      <Music className="h-4 w-4 mr-2" />
+      Mit Spotify verbinden
     </Button>
   );
 };

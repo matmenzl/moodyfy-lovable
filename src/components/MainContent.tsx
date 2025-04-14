@@ -6,8 +6,9 @@ import PlaylistHistory from '@/components/PlaylistHistory';
 import SpotifyConnect from '@/components/SpotifyConnect';
 import { PlaylistHistoryItem } from '@/components/chat/types';
 import { Song } from '@/components/SongList';
-import { LogIn } from "lucide-react";
+import { Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { redirectToSpotifyLogin } from '@/services/spotifyAuthService';
 
 interface MainContentProps {
   activeTab: string;
@@ -72,14 +73,14 @@ const MainContent: React.FC<MainContentProps> = ({
       <TabsContent value="history">
         {userAuthenticated === false && (
           <div className="text-center p-8 mb-4">
-            <LogIn className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <Music className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium">Anmelden für Playlist-Historie</h3>
             <p className="text-sm text-gray-400 mt-2 mb-4">
-              Bitte melde dich an, um deine gespeicherten Playlists zu sehen und mehr Features zu nutzen.
+              Bitte verbinde dein Spotify-Konto, um deine gespeicherten Playlists zu sehen und mehr Features zu nutzen.
             </p>
-            <Button className="bg-moodyfy-blue hover:bg-moodyfy-blue/80" onClick={onLogin}>
-              <LogIn className="h-4 w-4 mr-2" />
-              Anmelden
+            <Button className="bg-green-500 hover:bg-green-600/80" onClick={() => redirectToSpotifyLogin()}>
+              <Music className="h-4 w-4 mr-2" />
+              Mit Spotify verbinden
             </Button>
           </div>
         )}

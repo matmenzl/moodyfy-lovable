@@ -1,26 +1,13 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { connectToSpotify, isSpotifyConnected } from '@/services/musicService';
+import { redirectToSpotifyLogin, isSpotifyConnected } from '@/services/spotifyAuthService';
 import { Music, Link2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const SpotifyConnect = () => {
-  const handleConnectClick = async () => {
-    // If not logged in, first initiate Google login
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-    } else {
-      // User is logged in, connect Spotify
-      connectToSpotify();
-    }
+  const handleConnectClick = () => {
+    // Directly use the Spotify authentication flow
+    redirectToSpotifyLogin();
   };
   
   const isConnected = isSpotifyConnected();
