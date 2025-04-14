@@ -63,7 +63,7 @@ const MainContent: React.FC<MainContentProps> = ({
           mood={mood}
           genre={genre}
           playlistUrl={playlistUrl}
-          step={step === 0 ? 'MoodInput' : step === 1 ? 'SongRecommendations' : 'PlaylistCreated'}
+          step={step}
           isLoading={isLoading}
           onReset={onReset}
         />

@@ -11,14 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 import AuthButton from '@/components/AuthButton';
 import MainContent from '@/components/MainContent';
 
-enum Step {
-  MoodInput,
-  SongRecommendations,
-  PlaylistCreated
-}
+type Step = 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
 
 const Index = () => {
-  const [step, setStep] = useState<Step>(Step.MoodInput);
+  const [step, setStep] = useState<Step>('MoodInput');
   const [mood, setMood] = useState('');
   const [genre, setGenre] = useState('');
   const [songs, setSongs] = useState<Song[]>([]);
@@ -35,17 +31,14 @@ const Index = () => {
   useEffect(() => {
     setSpotifyConnected(isSpotifyConnected());
     
-    // Set up authentication listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUserAuthenticated(!!session);
       
-      // Refresh playlist history when auth state changes
       if (session) {
         fetchPlaylistHistory();
       }
     });
     
-    // Initial auth check
     const checkAuth = async () => {
       const authenticated = await isAuthenticated();
       setUserAuthenticated(authenticated);
@@ -87,7 +80,7 @@ const Index = () => {
       const recommendedSongs = await getAISongRecommendations(moodInput, genreInput);
       setSongs(recommendedSongs);
       setIsLoading(false);
-      setStep(Step.SongRecommendations);
+      setStep('SongRecommendations');
     } catch (error) {
       console.error('Error getting song recommendations:', error);
       toast({
@@ -114,7 +107,7 @@ const Index = () => {
       setPlaylistHistory(prev => [savedPlaylist, ...prev]);
       
       setIsLoading(false);
-      setStep(Step.PlaylistCreated);
+      setStep('PlaylistCreated');
       
       const notFoundCount = notFound.length;
       
@@ -138,7 +131,7 @@ const Index = () => {
   };
 
   const handleReset = () => {
-    setStep(Step.MoodInput);
+    setStep('MoodInput');
     setMood('');
     setGenre('');
     setSongs([]);
@@ -152,10 +145,10 @@ const Index = () => {
     setGenre(playlist.genre || '');
     setSongs(playlist.songs);
     setPlaylistUrl(playlist.spotifyUrl || '');
-    setAddedSongs(playlist.songs); // Assuming all songs were added in history item
+    setAddedSongs(playlist.songs);
     setNotFoundSongs([]);
     
-    setStep(playlist.songs.length > 0 ? Step.PlaylistCreated : Step.MoodInput);
+    setStep(playlist.songs.length > 0 ? 'PlaylistCreated' : 'MoodInput');
     setActiveTab("chat");
     
     toast({
@@ -179,7 +172,6 @@ const Index = () => {
       <div className="fixed -z-10 bottom-20 right-10 w-64 h-64 bg-moodyfy-pink/20 rounded-full blur-3xl"></div>
       
       <div className="container max-w-4xl px-4 mx-auto pt-8">
-        {/* Auth Button */}
         <div className="flex justify-end mb-4">
           <AuthButton isAuthenticated={!!userAuthenticated} />
         </div>
