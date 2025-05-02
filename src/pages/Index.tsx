@@ -163,6 +163,16 @@ const Index = () => {
     }
   };
 
+  const handleRejectPlaylist = () => {
+    setStep('MoodInput');
+    setSongs([]);
+    
+    setPlaylistUrl('');
+    setAddedSongs([]);
+    setNotFoundSongs([]);
+    setIsLoading(false);
+  };
+
   const handleReset = () => {
     setStep('MoodInput');
     setMood('');
@@ -235,7 +245,7 @@ const Index = () => {
             playlistHistory={playlistHistory}
             onSubmitMood={handleMoodSubmit}
             onConfirmPlaylist={handleConfirmPlaylist}
-            onRejectPlaylist={handleReset}
+            onRejectPlaylist={handleRejectPlaylist}
             onReset={handleReset}
             onOpenPlaylist={handleOpenPlaylist}
             onLogin={handleLogin}

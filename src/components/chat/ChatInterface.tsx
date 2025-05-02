@@ -109,7 +109,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   Yes, create playlist
                 </Button>
                 <Button 
-                  onClick={onRejectPlaylist}
+                  onClick={() => {
+                    // Remove songs message to allow for regeneration
+                    setMessages(prev => prev.filter(msg => msg.id !== 'songs' && msg.id !== 'user-mood'));
+                    onRejectPlaylist();
+                  }}
                   variant="outline"
                   className="bg-transparent border-white/20 hover:bg-white/10 transition-colors"
                   size="sm"
