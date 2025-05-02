@@ -1,15 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Music, Sparkles, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { History } from "lucide-react";
 import ChatHeader from './ChatHeader';
 import ChatInputArea from './ChatInputArea';
 import ChatMessageList from './ChatMessageList';
 import GenreSelectionStep from './GenreSelectionStep';
+import PlaylistRecommendations from './PlaylistRecommendations';
+import PlaylistCreated from './PlaylistCreated';
 import { Message } from './types';
 import { Song } from '../SongList';
 import { isSpotifyConnected } from '@/services/spotifyAuthService';
 import { MessageType } from '../ChatMessage';
+import { parseMoodAndGenre } from './utils/messageParser';
 
 interface ChatInterfaceProps {
   onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
@@ -37,8 +40,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   songs,
   addedSongs = [],
   notFoundSongs = [],
-  suggestedGenres = [],
-  historyTracksPreview = [],
+  suggestedGenres,
+  historyTracksPreview,
   mood,
   genre,
   playlistUrl,
@@ -63,17 +66,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [messages.length]);
 
-  // Add genre selection message when mood is provided and we're at the GenreSelection step
+  // Add genre selection message
   useEffect(() => {
     if (mood && step === 'GenreSelection' && suggestedGenres.length > 0 && 
         !messages.some(msg => msg.id === 'genre-suggestions')) {
-      setMessages(prev => [...prev, 
-        {
+      
+      addMessagePair({
+        userMsg: {
           id: 'user-mood',
           content: <p>I'm feeling {mood}</p>,
           type: 'user' as MessageType
         },
-        {
+        aiMsg: {
           id: 'genre-suggestions',
           content: (
             <GenreSelectionStep 
@@ -86,221 +90,112 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           ),
           type: 'assistant' as MessageType
         }
-      ]);
+      });
     }
   }, [mood, step, suggestedGenres, onGenreSelect, useHistory, isLoading, historyTracksPreview]);
 
-  // Add songs message when songs are received
+  // Add songs message 
   useEffect(() => {
     if (songs.length > 0 && step === 'SongRecommendations' && !messages.some(msg => msg.id === 'songs')) {
-      setMessages(prev => [...prev, 
-        // Only add the genre selection message if we don't already have a user-mood message
-        ...(prev.some(msg => msg.id === 'user-mood') ? [] : [
-          {
-            id: 'user-mood',
-            content: <p>I'm feeling {mood}</p>,
-            type: 'user' as MessageType
-          }
-        ]),
-        // Add genre selection confirmation if we came from genre selection step
-        ...(suggestedGenres.length > 0 ? [
-          {
-            id: 'genre-selection',
-            content: <p>I'd like some {genre} music</p>,
-            type: 'user' as MessageType
-          }
-        ] : []),
-        {
-          id: 'songs',
-          content: (
-            <div className="space-y-4">
-              <p>
-                Based on your <span className="text-moodyfy-blue">{mood}</span> mood
-                {genre && <> and <span className="text-moodyfy-pink">{genre}</span> preference</>}, 
-                here are some AI-recommended songs I think you'll enjoy:
-              </p>
-              
-              <div className="glass-card p-4 rounded-xl">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-medium">Song Recommendations</h3>
-                  <div className="flex items-center text-xs text-moodyfy-accent">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    <span>AI Generated</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 mb-3">
-                  Diese Empfehlungen basieren auf musikalischen Elementen wie Instrumentierung, Tempo und Stimmung, 
-                  die zu deiner Anfrage passen{useHistory ? " und deinem Hörverlauf" : ""}.
-                </p>
-                <ul className="space-y-2">
-                  {songs.map((song, index) => (
-                    <li key={index} className="flex items-center p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                      <div className="p-1 bg-moodyfy-accent/20 rounded-full mr-2">
-                        <Music className="h-3 w-3 text-moodyfy-accent" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-white text-sm">{song.title}</p>
-                        <p className="text-xs text-gray-400">{song.artist}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <p>Would you like me to create a Spotify playlist with these songs?</p>
-              
-              <div className="flex space-x-3">
-                <Button 
-                  onClick={onConfirmPlaylist}
-                  className="bg-moodyfy-green hover:bg-moodyfy-green/80 transition-colors"
-                  size="sm"
-                >
-                  Yes, create playlist
-                </Button>
-                <Button 
-                  onClick={() => {
-                    // Hinzufügen einer Ladeanzeige und dann Zurücksetzen
-                    setMessages(prev => {
-                      // Filtere alte Songs- und User-Nachrichten heraus
-                      const filteredMessages = prev.filter(
-                        msg => msg.id !== 'songs' && msg.id !== 'genre-selection'
-                      );
-                      
-                      // Füge eine Nachricht hinzu, die anzeigt, dass neue Songs generiert werden
-                      return [...filteredMessages, {
-                        id: 'regenerating',
-                        content: <p>Let me find some different songs for you...</p>,
-                        type: 'assistant'
-                      }];
-                    });
-
-                    // Setze die Playlist zurück und generiere neue Songs mit demselben Mood/Genre
-                    onRejectPlaylist();
-                    
-                    // Kleine Verzögerung, damit der Ladetext angezeigt werden kann
-                    setTimeout(() => {
-                      if (mood) {
-                        // Die vorherigen Songs als Ausschlussliste übergeben
-                        onSubmitMood(mood, genre, useHistory, songs);
-                      }
-                    }, 100);
-                  }}
-                  variant="outline"
-                  className="bg-transparent border-white/20 hover:bg-white/10 transition-colors"
-                  size="sm"
-                >
-                  No, try again
-                </Button>
-              </div>
-            </div>
-          ),
-          type: 'assistant' as MessageType
-        }
-      ]);
+      const newMessages: Message[] = [];
+      
+      // Only add the mood message if not already present
+      if (!messages.some(msg => msg.id === 'user-mood')) {
+        newMessages.push({
+          id: 'user-mood',
+          content: <p>I'm feeling {mood}</p>,
+          type: 'user' as MessageType
+        });
+      }
+      
+      // Add genre selection confirmation if from genre selection step
+      if (suggestedGenres.length > 0) {
+        newMessages.push({
+          id: 'genre-selection',
+          content: <p>I'd like some {genre} music</p>,
+          type: 'user' as MessageType
+        });
+      }
+      
+      // Add songs recommendation message
+      newMessages.push({
+        id: 'songs',
+        content: (
+          <PlaylistRecommendations
+            songs={songs}
+            mood={mood}
+            genre={genre}
+            useHistory={useHistory}
+            onConfirmPlaylist={onConfirmPlaylist}
+            onRejectPlaylist={handleRejectPlaylist}
+          />
+        ),
+        type: 'assistant' as MessageType
+      });
+      
+      setMessages(prev => [...prev, ...newMessages]);
     }
-  }, [songs, step, mood, genre, onConfirmPlaylist, onRejectPlaylist, onSubmitMood, useHistory, suggestedGenres]);
+  }, [songs, step, mood, genre, onConfirmPlaylist, useHistory, suggestedGenres]);
 
   // Add playlist created message
   useEffect(() => {
     if (playlistUrl && step === 'PlaylistCreated' && !messages.some(msg => msg.id === 'playlist-created')) {
-      setMessages(prev => [...prev,
-        {
+      addMessagePair({
+        userMsg: {
           id: 'playlist-confirmation',
           content: <p>Yes, please create a playlist with these songs!</p>,
           type: 'user' as MessageType
         },
-        {
+        aiMsg: {
           id: 'playlist-created',
           content: (
-            <div className="space-y-4">
-              <p>Great! I've created your playlist based on your mood.</p>
-              
-              {notFoundSongs && notFoundSongs.length > 0 && (
-                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg mb-4">
-                  <div className="flex items-center mb-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500 mr-2" />
-                    <p className="text-sm font-medium text-yellow-500">
-                      {notFoundSongs.length === songs.length 
-                        ? "None of the songs could be found on Spotify." 
-                        : `${notFoundSongs.length} of ${songs.length} songs couldn't be found on Spotify.`}
-                    </p>
-                  </div>
-                  <p className="text-xs text-gray-400 mb-2">
-                    This can happen with AI-generated recommendations that might not match exactly with Spotify's catalog.
-                  </p>
-                  {notFoundSongs.length > 0 && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-yellow-500/80 hover:text-yellow-500 transition-colors">
-                        Show missing songs
-                      </summary>
-                      <ul className="mt-2 space-y-1">
-                        {notFoundSongs.map((song, index) => (
-                          <li key={index} className="flex items-center">
-                            <XCircle className="h-3 w-3 text-yellow-500/80 mr-1" />
-                            <span>{song.title} - {song.artist}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              )}
-              
-              <div className="glass-card p-4 rounded-xl flex flex-col items-center">
-                <div className="mb-3 p-3 bg-moodyfy-green/20 rounded-full">
-                  <Music className="h-6 w-6 text-moodyfy-green" />
-                </div>
-                <h3 className="font-bold mb-2">Your Playlist is Ready!</h3>
-                
-                {addedSongs && addedSongs.length > 0 && (
-                  <div className="w-full mb-4">
-                    <div className="flex items-center mb-2">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      <p className="text-sm font-medium">
-                        {addedSongs.length} songs added to your playlist
-                      </p>
-                    </div>
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-moodyfy-blue hover:text-moodyfy-blue/80 transition-colors">
-                        Show added songs
-                      </summary>
-                      <ul className="mt-2 space-y-1">
-                        {addedSongs.map((song, index) => (
-                          <li key={index} className="flex items-center">
-                            <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                            <span>{song.title} - {song.artist}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </div>
-                )}
-                
-                <Button 
-                  onClick={() => window.open(playlistUrl, '_blank')}
-                  className="w-full bg-gradient-to-r from-moodyfy-blue to-moodyfy-accent hover:opacity-90 transition-all mb-3"
-                  size="sm"
-                >
-                  Open in Spotify
-                </Button>
-                
-                <Button 
-                  onClick={onReset}
-                  variant="outline"
-                  className="w-full bg-transparent border-white/20 hover:bg-white/10 transition-colors"
-                  size="sm"
-                >
-                  Create another playlist
-                </Button>
-              </div>
-            </div>
+            <PlaylistCreated
+              addedSongs={addedSongs}
+              notFoundSongs={notFoundSongs}
+              playlistUrl={playlistUrl}
+              songs={songs}
+              onReset={onReset}
+            />
           ),
           type: 'assistant' as MessageType
         }
-      ]);
+      });
     }
-  }, [playlistUrl, step, onReset, addedSongs, notFoundSongs, songs.length]);
+  }, [playlistUrl, step, onReset, addedSongs, notFoundSongs, songs]);
 
+  // Helper function to add message pairs
+  const addMessagePair = ({ userMsg, aiMsg }: { userMsg: Message, aiMsg: Message }) => {
+    setMessages(prev => [...prev, userMsg, aiMsg]);
+  };
+
+  // Handle rejection and regeneration of playlist
+  const handleRejectPlaylist = () => {
+    // Add a loader message
+    setMessages(prev => {
+      // Filter out old song and genre messages
+      const filteredMessages = prev.filter(msg => msg.id !== 'songs' && msg.id !== 'genre-selection');
+      
+      // Add the regeneration message
+      return [...filteredMessages, {
+        id: 'regenerating',
+        content: <p>Let me find some different songs for you...</p>,
+        type: 'assistant' as MessageType
+      }];
+    });
+
+    // Call the parent rejection handler
+    onRejectPlaylist();
+    
+    // Small delay to show the loading text
+    setTimeout(() => {
+      if (mood) {
+        // Pass previous songs as exclusion list
+        onSubmitMood(mood, genre, useHistory, songs);
+      }
+    }, 100);
+  };
+
+  // Handle user input submission
   const handleSubmit = (input: string) => {
     // Add user message
     setMessages(prev => [...prev, {
@@ -310,24 +205,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }]);
     
     // Parse mood and genre from input
-    let userMood = input;
-    let userGenre = '';
-    
-    // Simple parsing logic - if input contains "and", assume format is "mood and genre"
-    if (input.toLowerCase().includes(' and ')) {
-      const parts = input.split(/ and /i);
-      userMood = parts[0].trim();
-      
-      // Extract genre, assuming format like "I want some rock music" or just "rock"
-      const genrePart = parts[1].trim();
-      const genreWords = genrePart.split(' ');
-      userGenre = genreWords[genreWords.length - 1].replace(/[^a-zA-Z0-9-]/g, '');
-      
-      // If genre is "music", try the word before it
-      if (userGenre.toLowerCase() === 'music' && genreWords.length > 1) {
-        userGenre = genreWords[genreWords.length - 2].replace(/[^a-zA-Z0-9-]/g, '');
-      }
-    }
+    const { mood: userMood, genre: userGenre } = parseMoodAndGenre(input);
     
     // Add loading message
     setMessages(prev => [...prev, {
