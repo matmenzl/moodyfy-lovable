@@ -71,28 +71,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (mood && step === 'GenreSelection' && suggestedGenres.length > 0 && 
         !messages.some(msg => msg.id === 'genre-suggestions')) {
       
-      addMessagePair({
-        userMsg: {
+      const newMessages: Message[] = [];
+      
+      // Only add the user mood message if not already present
+      if (!messages.some(msg => msg.id === 'user-mood')) {
+        newMessages.push({
           id: 'user-mood',
           content: <p>I'm feeling {mood}</p>,
           type: 'user' as MessageType
-        },
-        aiMsg: {
-          id: 'genre-suggestions',
-          content: (
-            <GenreSelectionStep 
-              suggestedGenres={suggestedGenres}
-              mood={mood}
-              onGenreSelect={(selectedGenre) => onGenreSelect(mood, selectedGenre, useHistory)}
-              isLoading={isLoading}
-              historyTracksPreview={historyTracksPreview}
-            />
-          ),
-          type: 'assistant' as MessageType
-        }
+        });
+      }
+      
+      // Add genre suggestions message
+      newMessages.push({
+        id: 'genre-suggestions',
+        content: (
+          <GenreSelectionStep 
+            suggestedGenres={suggestedGenres}
+            mood={mood}
+            onGenreSelect={(selectedGenre) => onGenreSelect(mood, selectedGenre, useHistory)}
+            isLoading={isLoading}
+            historyTracksPreview={historyTracksPreview}
+          />
+        ),
+        type: 'assistant' as MessageType
       });
+      
+      // Update messages
+      setMessages(prev => [...prev, ...newMessages]);
     }
-  }, [mood, step, suggestedGenres, onGenreSelect, useHistory, isLoading, historyTracksPreview]);
+  }, [mood, step, suggestedGenres, onGenreSelect, useHistory, isLoading, historyTracksPreview, messages]);
 
   // Add songs message 
   useEffect(() => {
@@ -109,7 +117,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
       
       // Add genre selection confirmation if from genre selection step
-      if (suggestedGenres.length > 0) {
+      if (genre && !messages.some(msg => msg.id === 'genre-selection')) {
         newMessages.push({
           id: 'genre-selection',
           content: <p>I'd like some {genre} music</p>,
@@ -135,38 +143,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       setMessages(prev => [...prev, ...newMessages]);
     }
-  }, [songs, step, mood, genre, onConfirmPlaylist, useHistory, suggestedGenres]);
+  }, [songs, step, mood, genre, onConfirmPlaylist, useHistory, messages]);
 
   // Add playlist created message
   useEffect(() => {
     if (playlistUrl && step === 'PlaylistCreated' && !messages.some(msg => msg.id === 'playlist-created')) {
-      addMessagePair({
-        userMsg: {
+      const newMessages: Message[] = [];
+      
+      // Add confirmation message if not already present
+      if (!messages.some(msg => msg.id === 'playlist-confirmation')) {
+        newMessages.push({
           id: 'playlist-confirmation',
           content: <p>Yes, please create a playlist with these songs!</p>,
           type: 'user' as MessageType
-        },
-        aiMsg: {
-          id: 'playlist-created',
-          content: (
-            <PlaylistCreated
-              addedSongs={addedSongs}
-              notFoundSongs={notFoundSongs}
-              playlistUrl={playlistUrl}
-              songs={songs}
-              onReset={onReset}
-            />
-          ),
-          type: 'assistant' as MessageType
-        }
+        });
+      }
+      
+      // Add playlist created message
+      newMessages.push({
+        id: 'playlist-created',
+        content: (
+          <PlaylistCreated
+            addedSongs={addedSongs}
+            notFoundSongs={notFoundSongs}
+            playlistUrl={playlistUrl}
+            songs={songs}
+            onReset={onReset}
+          />
+        ),
+        type: 'assistant' as MessageType
       });
+      
+      setMessages(prev => [...prev, ...newMessages]);
     }
-  }, [playlistUrl, step, onReset, addedSongs, notFoundSongs, songs]);
-
-  // Helper function to add message pairs
-  const addMessagePair = ({ userMsg, aiMsg }: { userMsg: Message, aiMsg: Message }) => {
-    setMessages(prev => [...prev, userMsg, aiMsg]);
-  };
+  }, [playlistUrl, step, onReset, addedSongs, notFoundSongs, songs, messages]);
 
   // Handle rejection and regeneration of playlist
   const handleRejectPlaylist = () => {

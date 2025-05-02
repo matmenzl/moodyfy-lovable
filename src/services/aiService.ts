@@ -1,4 +1,3 @@
-
 import { Song } from '@/components/SongList';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -52,7 +51,7 @@ export const getAISongRecommendations = async (
   }
 };
 
-// New function to get genre suggestions based on listening history
+// Function to get genre suggestions based on listening history
 export const getGenreSuggestions = async (
   historyTracks: Song[],
   mood?: string
@@ -60,7 +59,7 @@ export const getGenreSuggestions = async (
   try {
     console.log(`Requesting genre suggestions based on ${historyTracks.length} tracks from listening history`);
     
-    // Call our new Supabase Edge Function
+    // Call our Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('suggest-genres', {
       body: { 
         historyTracks,
@@ -78,6 +77,7 @@ export const getGenreSuggestions = async (
       throw new Error('Invalid response from AI service');
     }
     
+    console.log('Received genre suggestions:', data);
     return data as string[];
   } catch (error) {
     console.error('Error getting genre suggestions:', error);

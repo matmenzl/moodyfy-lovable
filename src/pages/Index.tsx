@@ -78,12 +78,14 @@ const Index = () => {
   const handleMoodSubmit = async (moodInput: string, genreInput: string, useHistory: boolean = false, excludePrevSongs: Song[] = []) => {
     setMood(moodInput);
     setIsLoading(true);
+    console.log(`Mood submitted: ${moodInput}, genre: ${genreInput}, useHistory: ${useHistory}`);
     
     try {
       // If user wants to use history and is connected to Spotify, 
       // get listening history and show genre selection step
-      if (useHistory && isSpotifyConnected() && !genreInput) {
+      if (useHistory && isSpotifyConnected()) {
         try {
+          console.log("Getting recently played tracks for genre suggestions");
           const historySongs = await getRecentlyPlayedTracks(15);
           console.log(`Retrieved ${historySongs.length} tracks from listening history for genre suggestions`);
           
@@ -91,12 +93,20 @@ const Index = () => {
             // Store a preview of history tracks for display
             setHistoryTracksPreview(historySongs.slice(0, 10));
             
-            // Get genre suggestions from OpenAI based on listening history
-            const genres = await getGenreSuggestions(historySongs, moodInput);
-            setSuggestedGenres(genres);
-            setIsLoading(false);
-            setStep('GenreSelection');
-            return;
+            // Only get genre suggestions if no genre was specified
+            if (!genreInput) {
+              console.log(`Getting genre suggestions for mood: ${moodInput}`);
+              // Get genre suggestions from OpenAI based on listening history
+              const genres = await getGenreSuggestions(historySongs, moodInput);
+              console.log("Received genre suggestions:", genres);
+              
+              if (genres && genres.length > 0) {
+                setSuggestedGenres(genres);
+                setIsLoading(false);
+                setStep('GenreSelection');
+                return;
+              }
+            }
           }
         } catch (error) {
           console.error('Fehler beim Laden des Hörverlaufs für Genre-Vorschläge:', error);
@@ -105,6 +115,7 @@ const Index = () => {
       
       // If we already have a genre or there was an issue getting history,
       // continue with song recommendations
+      console.log("Proceeding directly to song recommendations");
       handleGenreSelect(moodInput, genreInput, useHistory, excludePrevSongs);
     } catch (error) {
       console.error('Error in mood submission:', error);

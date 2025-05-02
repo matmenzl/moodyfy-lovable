@@ -21,6 +21,8 @@ const GenreSelectionStep: React.FC<GenreSelectionStepProps> = ({
 }) => {
   const [customGenre, setCustomGenre] = useState('');
 
+  console.log('Rendering GenreSelectionStep with genres:', suggestedGenres);
+
   return (
     <div className="space-y-4">
       <p>
