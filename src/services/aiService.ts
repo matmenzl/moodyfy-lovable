@@ -52,4 +52,36 @@ export const getAISongRecommendations = async (
   }
 };
 
-// The original commented code can be removed as we've now implemented the real OpenAI integration
+// New function to get genre suggestions based on listening history
+export const getGenreSuggestions = async (
+  historyTracks: Song[],
+  mood?: string
+): Promise<string[]> => {
+  try {
+    console.log(`Requesting genre suggestions based on ${historyTracks.length} tracks from listening history`);
+    
+    // Call our new Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('suggest-genres', {
+      body: { 
+        historyTracks,
+        mood 
+      },
+    });
+    
+    if (error) {
+      console.error('Error calling suggest-genres function:', error);
+      throw new Error('Failed to get genre suggestions');
+    }
+
+    if (!data || !Array.isArray(data)) {
+      console.error('Invalid response format from suggest-genres function:', data);
+      throw new Error('Invalid response from AI service');
+    }
+    
+    return data as string[];
+  } catch (error) {
+    console.error('Error getting genre suggestions:', error);
+    // Fallback to some generic genres
+    return ['pop', 'rock', 'electronic', 'hip hop', 'jazz'];
+  }
+};

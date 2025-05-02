@@ -13,7 +13,7 @@ import { redirectToSpotifyLogin } from '@/services/spotifyAuthService';
 interface MainContentProps {
   activeTab: string;
   userAuthenticated: boolean | null;
-  step: 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
+  step: 'MoodInput' | 'GenreSelection' | 'SongRecommendations' | 'PlaylistCreated';
   songs: Song[];
   mood: string;
   genre: string;
@@ -23,11 +23,14 @@ interface MainContentProps {
   isLoading: boolean;
   playlistHistory: PlaylistHistoryItem[];
   onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
+  onGenreSelect: (mood: string, genre: string, useHistory: boolean) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   onReset: () => void;
   onOpenPlaylist: (playlist: PlaylistHistoryItem) => void;
   onLogin: () => void;
+  suggestedGenres?: string[];
+  historyTracksPreview?: Song[];
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -43,11 +46,14 @@ const MainContent: React.FC<MainContentProps> = ({
   isLoading,
   playlistHistory,
   onSubmitMood,
+  onGenreSelect,
   onConfirmPlaylist,
   onRejectPlaylist,
   onReset,
   onOpenPlaylist,
-  onLogin
+  onLogin,
+  suggestedGenres = [],
+  historyTracksPreview = []
 }) => {
   return (
     <>
@@ -56,11 +62,14 @@ const MainContent: React.FC<MainContentProps> = ({
         
         <ChatInterface
           onSubmitMood={onSubmitMood}
+          onGenreSelect={onGenreSelect}
           onConfirmPlaylist={onConfirmPlaylist}
           onRejectPlaylist={onRejectPlaylist}
           songs={songs}
           addedSongs={addedSongs}
           notFoundSongs={notFoundSongs}
+          suggestedGenres={suggestedGenres}
+          historyTracksPreview={historyTracksPreview}
           mood={mood}
           genre={genre}
           playlistUrl={playlistUrl}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Music, Sparkles, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
@@ -5,32 +6,39 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ChatHeader from './ChatHeader';
 import ChatInputArea from './ChatInputArea';
 import ChatMessageList from './ChatMessageList';
+import GenreSelectionStep from './GenreSelectionStep';
 import { Message } from './types';
 import { Song } from '../SongList';
 import { isSpotifyConnected } from '@/services/spotifyAuthService';
 
 interface ChatInterfaceProps {
   onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
+  onGenreSelect: (mood: string, genre: string, useHistory: boolean) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   songs: Song[];
   addedSongs?: Song[];
   notFoundSongs?: Song[];
+  suggestedGenres: string[];
+  historyTracksPreview: Song[];
   mood: string;
   genre: string;
   playlistUrl: string;
-  step: 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
+  step: 'MoodInput' | 'GenreSelection' | 'SongRecommendations' | 'PlaylistCreated';
   isLoading: boolean;
   onReset: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSubmitMood,
+  onGenreSelect,
   onConfirmPlaylist,
   onRejectPlaylist,
   songs,
   addedSongs = [],
   notFoundSongs = [],
+  suggestedGenres = [],
+  historyTracksPreview = [],
   mood,
   genre,
   playlistUrl,
@@ -55,15 +63,53 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [messages.length]);
 
+  // Add genre selection message when mood is provided and we're at the GenreSelection step
+  useEffect(() => {
+    if (mood && step === 'GenreSelection' && suggestedGenres.length > 0 && 
+        !messages.some(msg => msg.id === 'genre-suggestions')) {
+      setMessages(prev => [...prev, 
+        {
+          id: 'user-mood',
+          content: <p>I'm feeling {mood}</p>,
+          type: 'user'
+        },
+        {
+          id: 'genre-suggestions',
+          content: (
+            <GenreSelectionStep 
+              suggestedGenres={suggestedGenres}
+              mood={mood}
+              onGenreSelect={(selectedGenre) => onGenreSelect(mood, selectedGenre, useHistory)}
+              isLoading={isLoading}
+              historyTracksPreview={historyTracksPreview}
+            />
+          ),
+          type: 'assistant'
+        }
+      ]);
+    }
+  }, [mood, step, suggestedGenres, onGenreSelect, useHistory, isLoading, historyTracksPreview]);
+
   // Add songs message when songs are received
   useEffect(() => {
     if (songs.length > 0 && step === 'SongRecommendations' && !messages.some(msg => msg.id === 'songs')) {
       setMessages(prev => [...prev, 
-        {
-          id: 'user-mood',
-          content: <p>I'm feeling {mood}{genre ? ` and I'd like some ${genre} music` : ''}</p>,
-          type: 'user'
-        },
+        // Only add the genre selection message if we don't already have a user-mood message
+        ...(prev.some(msg => msg.id === 'user-mood') ? [] : [
+          {
+            id: 'user-mood',
+            content: <p>I'm feeling {mood}</p>,
+            type: 'user'
+          }
+        ]),
+        // Add genre selection confirmation if we came from genre selection step
+        ...(suggestedGenres.length > 0 ? [
+          {
+            id: 'genre-selection',
+            content: <p>I'd like some {genre} music</p>,
+            type: 'user'
+          }
+        ] : []),
         {
           id: 'songs',
           content: (
@@ -117,7 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     setMessages(prev => {
                       // Filtere alte Songs- und User-Nachrichten heraus
                       const filteredMessages = prev.filter(
-                        msg => msg.id !== 'songs' && msg.id !== 'user-mood'
+                        msg => msg.id !== 'songs' && msg.id !== 'genre-selection'
                       );
                       
                       // Füge eine Nachricht hinzu, die anzeigt, dass neue Songs generiert werden
@@ -152,7 +198,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
       ]);
     }
-  }, [songs, step, mood, genre, onConfirmPlaylist, onRejectPlaylist, onSubmitMood, useHistory]);
+  }, [songs, step, mood, genre, onConfirmPlaylist, onRejectPlaylist, onSubmitMood, useHistory, suggestedGenres]);
 
   // Add playlist created message
   useEffect(() => {

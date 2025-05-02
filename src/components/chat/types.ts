@@ -13,7 +13,7 @@ export interface ChatContextType {
   addMessage: (message: Omit<Message, "id">) => void;
   addUserMessage: (content: string) => void;
   isLoading: boolean;
-  currentStep: 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
+  currentStep: 'MoodInput' | 'GenreSelection' | 'SongRecommendations' | 'PlaylistCreated';
   aiModel?: string;
   playlistHistory?: PlaylistHistoryItem[];
 }

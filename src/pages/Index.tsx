@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
-import { getAISongRecommendations } from '@/services/aiService';
+import { getAISongRecommendations, getGenreSuggestions } from '@/services/aiService';
 import { savePlaylist, getPlaylistHistory, isAuthenticated } from '@/services/playlistHistoryService';
 import { getRecentlyPlayedTracks } from '@/services/spotifyPlaylistService';
 import { Song } from '@/components/SongList';
@@ -12,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AuthButton from '@/components/AuthButton';
 import MainContent from '@/components/MainContent';
 
-type Step = 'MoodInput' | 'SongRecommendations' | 'PlaylistCreated';
+type Step = 'MoodInput' | 'GenreSelection' | 'SongRecommendations' | 'PlaylistCreated';
 
 const Index = () => {
   const [step, setStep] = useState<Step>('MoodInput');
@@ -27,6 +28,8 @@ const Index = () => {
   const [playlistHistory, setPlaylistHistory] = useState<PlaylistHistoryItem[]>([]);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [userAuthenticated, setUserAuthenticated] = useState<boolean | null>(null);
+  const [suggestedGenres, setSuggestedGenres] = useState<string[]>([]);
+  const [historyTracksPreview, setHistoryTracksPreview] = useState<Song[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,6 +77,47 @@ const Index = () => {
 
   const handleMoodSubmit = async (moodInput: string, genreInput: string, useHistory: boolean = false, excludePrevSongs: Song[] = []) => {
     setMood(moodInput);
+    setIsLoading(true);
+    
+    try {
+      // If user wants to use history and is connected to Spotify, 
+      // get listening history and show genre selection step
+      if (useHistory && isSpotifyConnected() && !genreInput) {
+        try {
+          const historySongs = await getRecentlyPlayedTracks(15);
+          console.log(`Retrieved ${historySongs.length} tracks from listening history for genre suggestions`);
+          
+          if (historySongs.length > 0) {
+            // Store a preview of history tracks for display
+            setHistoryTracksPreview(historySongs.slice(0, 10));
+            
+            // Get genre suggestions from OpenAI based on listening history
+            const genres = await getGenreSuggestions(historySongs, moodInput);
+            setSuggestedGenres(genres);
+            setIsLoading(false);
+            setStep('GenreSelection');
+            return;
+          }
+        } catch (error) {
+          console.error('Fehler beim Laden des Hörverlaufs für Genre-Vorschläge:', error);
+        }
+      }
+      
+      // If we already have a genre or there was an issue getting history,
+      // continue with song recommendations
+      handleGenreSelect(moodInput, genreInput, useHistory, excludePrevSongs);
+    } catch (error) {
+      console.error('Error in mood submission:', error);
+      toast({
+        title: "Fehler",
+        description: "Konnte keine Genre-Vorschläge abrufen. Bitte versuche es erneut.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenreSelect = async (moodInput: string, genreInput: string, useHistory: boolean = false, excludePrevSongs: Song[] = []) => {
     setGenre(genreInput);
     setIsLoading(true);
     
@@ -104,7 +148,7 @@ const Index = () => {
       // Füge Hörverlauf-Songs zur Playlist hinzu, wenn gewünscht
       if (useHistory && isSpotifyConnected()) {
         try {
-          const historyTracksForPlaylist = await getRecentlyPlayedTracks(10);
+          const historyTracksForPlaylist = await getRecentlyPlayedTracks(5);
           
           if (historyTracksForPlaylist.length > 0) {
             const existingTitles = new Set(recommendedSongs.map(song => `${song.title}|${song.artist}`));
@@ -122,12 +166,6 @@ const Index = () => {
           }
         } catch (error) {
           console.error('Fehler beim Laden des Hörverlaufs:', error);
-          toast({
-            title: "Fehler",
-            description: "Konnte keine Songempfehlungen abrufen. Bitte versuche es erneut.",
-            variant: "destructive"
-          });
-          setIsLoading(false);
         }
       }
       
@@ -184,8 +222,15 @@ const Index = () => {
   };
 
   const handleRejectPlaylist = () => {
-    setStep('MoodInput');
-    setSongs([]);
+    if (step === 'GenreSelection') {
+      setStep('MoodInput');
+      setMood('');
+      setSuggestedGenres([]);
+      setHistoryTracksPreview([]);
+    } else {
+      setStep('MoodInput');
+      setSongs([]);
+    }
     
     setPlaylistUrl('');
     setAddedSongs([]);
@@ -201,6 +246,8 @@ const Index = () => {
     setPlaylistUrl('');
     setAddedSongs([]);
     setNotFoundSongs([]);
+    setSuggestedGenres([]);
+    setHistoryTracksPreview([]);
   };
 
   const handleOpenPlaylist = (playlist: PlaylistHistoryItem) => {
@@ -264,11 +311,14 @@ const Index = () => {
             isLoading={isLoading}
             playlistHistory={playlistHistory}
             onSubmitMood={handleMoodSubmit}
+            onGenreSelect={handleGenreSelect}
             onConfirmPlaylist={handleConfirmPlaylist}
             onRejectPlaylist={handleRejectPlaylist}
             onReset={handleReset}
             onOpenPlaylist={handleOpenPlaylist}
             onLogin={handleLogin}
+            suggestedGenres={suggestedGenres}
+            historyTracksPreview={historyTracksPreview}
           />
         </Tabs>
       </div>
