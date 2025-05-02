@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Music, Sparkles, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
@@ -10,6 +9,7 @@ import GenreSelectionStep from './GenreSelectionStep';
 import { Message } from './types';
 import { Song } from '../SongList';
 import { isSpotifyConnected } from '@/services/spotifyAuthService';
+import { MessageType } from '../ChatMessage';
 
 interface ChatInterfaceProps {
   onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
@@ -57,7 +57,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {
           id: 'welcome',
           content: <ChatHeader />,
-          type: 'assistant'
+          type: 'assistant' as MessageType
         }
       ]);
     }
@@ -71,7 +71,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {
           id: 'user-mood',
           content: <p>I'm feeling {mood}</p>,
-          type: 'user'
+          type: 'user' as MessageType
         },
         {
           id: 'genre-suggestions',
@@ -84,7 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               historyTracksPreview={historyTracksPreview}
             />
           ),
-          type: 'assistant'
+          type: 'assistant' as MessageType
         }
       ]);
     }
@@ -99,7 +99,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {
             id: 'user-mood',
             content: <p>I'm feeling {mood}</p>,
-            type: 'user'
+            type: 'user' as MessageType
           }
         ]),
         // Add genre selection confirmation if we came from genre selection step
@@ -107,7 +107,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {
             id: 'genre-selection',
             content: <p>I'd like some {genre} music</p>,
-            type: 'user'
+            type: 'user' as MessageType
           }
         ] : []),
         {
@@ -194,7 +194,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           ),
-          type: 'assistant'
+          type: 'assistant' as MessageType
         }
       ]);
     }
@@ -207,7 +207,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {
           id: 'playlist-confirmation',
           content: <p>Yes, please create a playlist with these songs!</p>,
-          type: 'user'
+          type: 'user' as MessageType
         },
         {
           id: 'playlist-created',
@@ -295,7 +295,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           ),
-          type: 'assistant'
+          type: 'assistant' as MessageType
         }
       ]);
     }
@@ -306,7 +306,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setMessages(prev => [...prev, {
       id: `user-${Date.now()}`,
       content: <p>{input}</p>,
-      type: 'user'
+      type: 'user' as MessageType
     }]);
     
     // Parse mood and genre from input
@@ -333,7 +333,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setMessages(prev => [...prev, {
       id: 'loading',
       content: <p>Finding the perfect songs for your mood using AI...</p>,
-      type: 'assistant',
+      type: 'assistant' as MessageType,
     }]);
     
     // Submit mood and genre

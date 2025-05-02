@@ -26,7 +26,11 @@ interface ChatInterfaceWrapperProps {
 // This is just a wrapper that re-exports the refactored component
 // to maintain backward compatibility with existing code
 const ChatInterfaceWrapper = (props: ChatInterfaceWrapperProps) => {
-  return <ChatInterface {...props} />;
+  return <ChatInterface 
+    {...props}
+    suggestedGenres={props.suggestedGenres || []}
+    historyTracksPreview={props.historyTracksPreview || []}
+  />;
 };
 
 export default ChatInterfaceWrapper;
