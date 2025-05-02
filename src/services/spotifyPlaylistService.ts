@@ -3,6 +3,31 @@ import { Song } from '@/components/SongList';
 import { spotifyApiRequest } from './spotify/apiService';
 import { useToast } from '@/components/ui/use-toast';
 
+// Lade die zuletzt gehörten Songs des Nutzers von Spotify
+export const getRecentlyPlayedTracks = async (limit: number = 20): Promise<Song[]> => {
+  try {
+    console.log(`Loading recently played tracks (limit: ${limit})`);
+    const response = await spotifyApiRequest(`/me/player/recently-played?limit=${limit}`);
+    
+    if (!response.items || response.items.length === 0) {
+      console.log('No recently played tracks found');
+      return [];
+    }
+    
+    // Konvertiere Spotify-Format zu Song-Format
+    const songs = response.items.map((item: any) => ({
+      title: item.track.name,
+      artist: item.track.artists.map((artist: any) => artist.name).join(', ')
+    }));
+    
+    console.log(`✅ Loaded ${songs.length} recently played tracks`);
+    return songs;
+  } catch (error) {
+    console.error('Fehler beim Laden der zuletzt gehörten Songs:', error);
+    return [];
+  }
+};
+
 // Suche nach Songs in Spotify mit verbesserter Fehlerbehandlung und Logging
 export const searchSpotifyTracks = async (
   songTitle: string,

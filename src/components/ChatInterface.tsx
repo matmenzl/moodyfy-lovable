@@ -6,7 +6,7 @@ import { Song } from '@/components/SongList';
 import ChatInterface from './chat/ChatInterface';
 
 interface ChatInterfaceWrapperProps {
-  onSubmitMood: (mood: string, genre: string) => void;
+  onSubmitMood: (mood: string, genre: string, useHistory?: boolean) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   songs: Song[];

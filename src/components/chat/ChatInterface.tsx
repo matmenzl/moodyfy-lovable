@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Music, Sparkles, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Music, Sparkles, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import ChatHeader from './ChatHeader';
 import ChatInputArea from './ChatInputArea';
 import ChatMessageList from './ChatMessageList';
 import { Message } from './types';
 import { Song } from '../SongList';
+import { isSpotifyConnected } from '@/services/spotifyAuthService';
 
 interface ChatInterfaceProps {
-  onSubmitMood: (mood: string, genre: string) => void;
+  onSubmitMood: (mood: string, genre: string, useHistory?: boolean) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   songs: Song[];
@@ -38,6 +40,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onReset
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [useHistory, setUseHistory] = useState(false);
+  const spotifyConnected = isSpotifyConnected();
 
   // Initialize with welcome message
   useEffect(() => {
@@ -258,7 +262,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }]);
     
     // Submit mood and genre
-    onSubmitMood(userMood, userGenre);
+    onSubmitMood(userMood, userGenre, useHistory);
   };
 
   return (
@@ -266,8 +270,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Messages area */}
       <ChatMessageList messages={messages} isLoadingMessage={isLoading} />
 
-      {/* Input area */}
-      <ChatInputArea onSubmit={handleSubmit} disabled={step !== 'MoodInput' || isLoading} />
+      {/* Input area with history checkbox for Spotify users */}
+      <div className="mt-auto">
+        {step === 'MoodInput' && spotifyConnected && (
+          <div className="flex items-center gap-2 mb-2 px-2">
+            <Checkbox
+              id="use-history"
+              checked={useHistory}
+              onCheckedChange={(checked) => setUseHistory(checked === true)}
+            />
+            <label 
+              htmlFor="use-history" 
+              className="text-sm flex items-center cursor-pointer"
+            >
+              <History className="h-4 w-4 mr-1 text-moodyfy-accent" />
+              Berücksichtige meine zuletzt gehörten Songs
+            </label>
+          </div>
+        )}
+        <ChatInputArea onSubmit={handleSubmit} disabled={step !== 'MoodInput' || isLoading} />
+      </div>
     </div>
   );
 };

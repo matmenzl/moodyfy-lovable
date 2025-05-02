@@ -3,6 +3,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { createPlaylist, isSpotifyConnected } from '@/services/musicService';
 import { getAISongRecommendations } from '@/services/aiService';
 import { savePlaylist, getPlaylistHistory, isAuthenticated } from '@/services/playlistHistoryService';
+import { getRecentlyPlayedTracks } from '@/services/spotifyPlaylistService';
 import { Song } from '@/components/SongList';
 import { PlaylistHistoryItem } from '@/components/chat/types';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,14 +72,46 @@ const Index = () => {
     }
   };
 
-  const handleMoodSubmit = async (moodInput: string, genreInput: string) => {
+  const handleMoodSubmit = async (moodInput: string, genreInput: string, useHistory: boolean = false) => {
     setMood(moodInput);
     setGenre(genreInput);
     setIsLoading(true);
     
     try {
       const recommendedSongs = await getAISongRecommendations(moodInput, genreInput);
-      setSongs(recommendedSongs);
+      
+      let finalSongs = [...recommendedSongs];
+      
+      if (useHistory && isSpotifyConnected()) {
+        try {
+          const historySongs = await getRecentlyPlayedTracks(10); // Hole die letzten 10 gehörten Songs
+          
+          if (historySongs.length > 0) {
+            const existingTitles = new Set(recommendedSongs.map(song => `${song.title}|${song.artist}`));
+            
+            const uniqueHistorySongs = historySongs.filter(
+              song => !existingTitles.has(`${song.title}|${song.artist}`)
+            );
+            
+            finalSongs = [...recommendedSongs, ...uniqueHistorySongs].slice(0, 15);
+            
+            toast({
+              title: "Hörverlauf berücksichtigt",
+              description: `${uniqueHistorySongs.length} Songs aus deinem Hörverlauf wurden hinzugefügt.`,
+            });
+          }
+        } catch (error) {
+          console.error('Fehler beim Laden des Hörverlaufs:', error);
+          toast({
+            title: "Fehler",
+            description: "Konnte keine Songempfehlungen abrufen. Bitte versuche es erneut.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+        }
+      }
+      
+      setSongs(finalSongs);
       setIsLoading(false);
       setStep('SongRecommendations');
     } catch (error) {
