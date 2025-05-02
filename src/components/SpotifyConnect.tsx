@@ -26,7 +26,7 @@ const SpotifyConnect = () => {
       </h3>
       
       <p className="text-sm text-gray-400 mb-4">
-        Verbinde dein Spotify-Konto, um Playlists direkt in deiner Bibliothek zu erstellen.
+        Verbinde dein Spotify-Konto, um Playlists direkt in deiner Bibliothek zu erstellen und deinen Hörverlauf für bessere Empfehlungen zu nutzen.
       </p>
       
       <Button 

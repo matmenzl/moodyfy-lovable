@@ -1,3 +1,4 @@
+
 // Spotify API Endpoints and Configuration
 export const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 export const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
@@ -14,7 +15,8 @@ export const SCOPES = [
   'playlist-modify-public',
   'playlist-modify-private',
   'user-read-private',
-  'user-read-email'
+  'user-read-email',
+  'user-read-recently-played' // Added this scope for recently played tracks
 ].join(' ');
 
 // State-Parameter für die OAuth-Sicherheit generieren
