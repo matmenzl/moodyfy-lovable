@@ -11,7 +11,7 @@ import { Song } from '../SongList';
 import { isSpotifyConnected } from '@/services/spotifyAuthService';
 
 interface ChatInterfaceProps {
-  onSubmitMood: (mood: string, genre: string, useHistory?: boolean) => void;
+  onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   songs: Song[];
@@ -131,7 +131,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     // Kleine Verzögerung, damit der Ladetext angezeigt werden kann
                     setTimeout(() => {
                       if (mood) {
-                        onSubmitMood(mood, genre, useHistory);
+                        // Die vorherigen Songs als Ausschlussliste übergeben
+                        onSubmitMood(mood, genre, useHistory, songs);
                       }
                     }, 100);
                   }}

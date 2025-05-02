@@ -72,13 +72,13 @@ const Index = () => {
     }
   };
 
-  const handleMoodSubmit = async (moodInput: string, genreInput: string, useHistory: boolean = false) => {
+  const handleMoodSubmit = async (moodInput: string, genreInput: string, useHistory: boolean = false, excludePrevSongs: Song[] = []) => {
     setMood(moodInput);
     setGenre(genreInput);
     setIsLoading(true);
     
     try {
-      const recommendedSongs = await getAISongRecommendations(moodInput, genreInput);
+      const recommendedSongs = await getAISongRecommendations(moodInput, genreInput, excludePrevSongs);
       
       let finalSongs = [...recommendedSongs];
       

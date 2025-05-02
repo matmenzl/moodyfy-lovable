@@ -23,7 +23,7 @@ serve(async (req) => {
       );
     }
 
-    const { mood, genre } = await req.json();
+    const { mood, genre, excludeSongs = [] } = await req.json();
     
     if (!mood) {
       return new Response(
@@ -33,6 +33,18 @@ serve(async (req) => {
     }
 
     console.log(`Generating recommendations for mood: ${mood}, genre: ${genre || 'any'}`);
+    if (excludeSongs.length > 0) {
+      console.log(`Excluding ${excludeSongs.length} songs from recommendations`);
+    }
+
+    // Format exclude songs list for the prompt
+    let excludeSongsContent = '';
+    if (excludeSongs && excludeSongs.length > 0) {
+      excludeSongsContent = "\n\nPlease DO NOT include these songs in your recommendations:\n" +
+        excludeSongs.map((song: {title: string, artist: string}) => 
+          `- "${song.title}" by ${song.artist}`
+        ).join("\n");
+    }
 
     const messages = [
       {
@@ -41,7 +53,7 @@ serve(async (req) => {
       },
       {
         role: "user",
-        content: `Recommend 10 songs for the mood: ${mood}${genre ? ` and genre: ${genre}` : ''}. The songs should genuinely reflect this mood${genre ? ` and genre` : ''}. Only respond with a JSON array.`
+        content: `Recommend 10 songs for the mood: ${mood}${genre ? ` and genre: ${genre}` : ''}. The songs should genuinely reflect this mood${genre ? ` and genre` : ''}. Only respond with a JSON array.${excludeSongsContent}`
       }
     ];
 

@@ -22,7 +22,7 @@ interface MainContentProps {
   notFoundSongs: Song[];
   isLoading: boolean;
   playlistHistory: PlaylistHistoryItem[];
-  onSubmitMood: (mood: string, genre: string, useHistory?: boolean) => void;
+  onSubmitMood: (mood: string, genre: string, useHistory?: boolean, excludeSongs?: Song[]) => void;
   onConfirmPlaylist: () => void;
   onRejectPlaylist: () => void;
   onReset: () => void;

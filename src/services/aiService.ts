@@ -5,14 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 // This service handles the communication with the OpenAI API via our Supabase Edge Function
 export const getAISongRecommendations = async (
   mood: string,
-  genre: string
+  genre: string,
+  excludeSongs?: Song[]
 ): Promise<Song[]> => {
   try {
     console.log('Requesting AI song recommendations for mood:', mood, 'and genre:', genre);
+    if (excludeSongs && excludeSongs.length > 0) {
+      console.log(`Excluding ${excludeSongs.length} songs from recommendations`);
+    }
     
     // Call our Supabase Edge Function that uses OpenAI
     const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-      body: { mood, genre },
+      body: { mood, genre, excludeSongs },
     });
     
     if (error) {
