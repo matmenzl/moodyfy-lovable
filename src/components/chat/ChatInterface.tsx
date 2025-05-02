@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Music, Sparkles, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
@@ -83,6 +82,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <span>AI Generated</span>
                   </div>
                 </div>
+                <p className="text-xs text-gray-400 mb-3">
+                  Diese Empfehlungen basieren auf musikalischen Elementen wie Instrumentierung, Tempo und Stimmung, 
+                  die zu deiner Anfrage passen{useHistory ? " und deinem Hörverlauf" : ""}.
+                </p>
                 <ul className="space-y-2">
                   {songs.map((song, index) => (
                     <li key={index} className="flex items-center p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">

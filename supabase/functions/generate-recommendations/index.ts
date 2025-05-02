@@ -23,7 +23,7 @@ serve(async (req) => {
       );
     }
 
-    const { mood, genre, excludeSongs = [] } = await req.json();
+    const { mood, genre, excludeSongs = [], includeHistory = false, historyTracks = [] } = await req.json();
     
     if (!mood) {
       return new Response(
@@ -36,6 +36,9 @@ serve(async (req) => {
     if (excludeSongs.length > 0) {
       console.log(`Excluding ${excludeSongs.length} songs from recommendations`);
     }
+    if (includeHistory && historyTracks.length > 0) {
+      console.log(`Including ${historyTracks.length} songs from listening history`);
+    }
 
     // Format exclude songs list for the prompt
     let excludeSongsContent = '';
@@ -45,16 +48,40 @@ serve(async (req) => {
           `- "${song.title}" by ${song.artist}`
         ).join("\n");
     }
+    
+    // Format history tracks for the prompt
+    let historyContent = '';
+    if (includeHistory && historyTracks.length > 0) {
+      historyContent = "\n\nHere are songs from the user's listening history that you should consider as inspiration:\n" +
+        historyTracks.map((song: {title: string, artist: string}) => 
+          `- "${song.title}" by ${song.artist}`
+        ).join("\n") +
+        "\n\nTry to recommend songs that match the mood and genre but are also stylistically similar to these history tracks in terms of instrumentation, tempo, or general feel.";
+    }
+
+    const systemPrompt = `
+      You are a music recommendation expert with deep knowledge of music theory, instrumentation, and song characteristics.
+      When recommending songs:
+      
+      1. Focus on the MUSICAL QUALITIES that match the requested mood, not just lyrical content
+      2. Consider instrumentation, tempo, chord progressions, and vocal style that typically convey the requested mood
+      3. For each genre, understand its typical patterns and how they can express different emotions
+      4. Provide diverse recommendations across different eras and popularity levels
+      5. Return ONLY a JSON array with objects having 'title' and 'artist' properties
+    `;
+
+    const userPrompt = `
+      Recommend 10 songs for the mood: ${mood}${genre ? ` and genre: ${genre}` : ''}.
+      
+      Beyond just the title words, focus on songs whose MUSICAL ELEMENTS (instrumentation, tempo, vocal style, chord progressions) genuinely convey this mood.
+      ${genre ? `Ensure the songs fit within the ${genre} genre tradition and sound.` : ''}
+      
+      Only respond with a JSON array.${excludeSongsContent}${historyContent}
+    `;
 
     const messages = [
-      {
-        role: "system",
-        content: "You are a music recommendation expert. Provide a list of 10 songs that match the user's mood and optional genre preference. Return ONLY a JSON array with objects having 'title' and 'artist' properties."
-      },
-      {
-        role: "user",
-        content: `Recommend 10 songs for the mood: ${mood}${genre ? ` and genre: ${genre}` : ''}. The songs should genuinely reflect this mood${genre ? ` and genre` : ''}. Only respond with a JSON array.${excludeSongsContent}`
-      }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
     ];
 
     // Call OpenAI API

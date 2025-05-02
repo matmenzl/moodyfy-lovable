@@ -78,18 +78,38 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      const recommendedSongs = await getAISongRecommendations(moodInput, genreInput, excludePrevSongs);
+      let historySongs: Song[] = [];
+      
+      // Hole Hörverlauf für OpenAI, falls aktiviert
+      if (useHistory && isSpotifyConnected()) {
+        try {
+          historySongs = await getRecentlyPlayedTracks(10);
+          console.log(`Retrieved ${historySongs.length} tracks from listening history to inform recommendations`);
+        } catch (error) {
+          console.error('Fehler beim Laden des Hörverlaufs für OpenAI:', error);
+        }
+      }
+      
+      // Übergebe den Hörverlauf an OpenAI für bessere Empfehlungen
+      const recommendedSongs = await getAISongRecommendations(
+        moodInput, 
+        genreInput, 
+        excludePrevSongs, 
+        useHistory, 
+        historySongs
+      );
       
       let finalSongs = [...recommendedSongs];
       
+      // Füge Hörverlauf-Songs zur Playlist hinzu, wenn gewünscht
       if (useHistory && isSpotifyConnected()) {
         try {
-          const historySongs = await getRecentlyPlayedTracks(10); // Hole die letzten 10 gehörten Songs
+          const historyTracksForPlaylist = await getRecentlyPlayedTracks(10);
           
-          if (historySongs.length > 0) {
+          if (historyTracksForPlaylist.length > 0) {
             const existingTitles = new Set(recommendedSongs.map(song => `${song.title}|${song.artist}`));
             
-            const uniqueHistorySongs = historySongs.filter(
+            const uniqueHistorySongs = historyTracksForPlaylist.filter(
               song => !existingTitles.has(`${song.title}|${song.artist}`)
             );
             

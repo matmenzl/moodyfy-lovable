@@ -6,17 +6,28 @@ import { supabase } from '@/integrations/supabase/client';
 export const getAISongRecommendations = async (
   mood: string,
   genre: string,
-  excludeSongs?: Song[]
+  excludeSongs?: Song[],
+  includeHistory: boolean = false,
+  historyTracks?: Song[]
 ): Promise<Song[]> => {
   try {
     console.log('Requesting AI song recommendations for mood:', mood, 'and genre:', genre);
     if (excludeSongs && excludeSongs.length > 0) {
       console.log(`Excluding ${excludeSongs.length} songs from recommendations`);
     }
+    if (includeHistory && historyTracks && historyTracks.length > 0) {
+      console.log(`Including ${historyTracks.length} songs from listening history as context`);
+    }
     
     // Call our Supabase Edge Function that uses OpenAI
     const { data, error } = await supabase.functions.invoke('generate-recommendations', {
-      body: { mood, genre, excludeSongs },
+      body: { 
+        mood, 
+        genre, 
+        excludeSongs,
+        includeHistory,
+        historyTracks
+      },
     });
     
     if (error) {
