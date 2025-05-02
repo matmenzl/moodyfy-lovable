@@ -110,9 +110,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </Button>
                 <Button 
                   onClick={() => {
-                    // Remove songs message to allow for regeneration
-                    setMessages(prev => prev.filter(msg => msg.id !== 'songs' && msg.id !== 'user-mood'));
+                    // Hinzufügen einer Ladeanzeige und dann Zurücksetzen
+                    setMessages(prev => {
+                      // Filtere alte Songs- und User-Nachrichten heraus
+                      const filteredMessages = prev.filter(
+                        msg => msg.id !== 'songs' && msg.id !== 'user-mood'
+                      );
+                      
+                      // Füge eine Nachricht hinzu, die anzeigt, dass neue Songs generiert werden
+                      return [...filteredMessages, {
+                        id: 'regenerating',
+                        content: <p>Let me find some different songs for you...</p>,
+                        type: 'assistant'
+                      }];
+                    });
+
+                    // Setze die Playlist zurück und generiere neue Songs mit demselben Mood/Genre
                     onRejectPlaylist();
+                    
+                    // Kleine Verzögerung, damit der Ladetext angezeigt werden kann
+                    setTimeout(() => {
+                      if (mood) {
+                        onSubmitMood(mood, genre, useHistory);
+                      }
+                    }, 100);
                   }}
                   variant="outline"
                   className="bg-transparent border-white/20 hover:bg-white/10 transition-colors"
@@ -127,7 +148,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
       ]);
     }
-  }, [songs, step, mood, genre, onConfirmPlaylist, onRejectPlaylist]);
+  }, [songs, step, mood, genre, onConfirmPlaylist, onRejectPlaylist, onSubmitMood, useHistory]);
 
   // Add playlist created message
   useEffect(() => {
