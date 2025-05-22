@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { getTokenFromCode } from '@/services/spotify/tokenService';
 import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
-import { SPOTIFY_CLIENT_SECRET } from '@/services/spotify/constants';
 
 const SpotifyCallback = () => {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'redirect_error' | 'missing_secret'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'redirect_error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   const { toast: uiToast } = useToast();
@@ -28,13 +27,6 @@ const SpotifyCallback = () => {
         if (error === 'invalid_client') {
           setStatus('redirect_error');
           setErrorMessage('Die Spotify Client-ID ist nicht mit dieser Redirect-URI registriert. Bitte aktualisiere die Redirect-URI im Spotify Developer Dashboard.');
-          return;
-        }
-        
-        // Überprüfen, ob ein Client Secret konfiguriert ist
-        if (!SPOTIFY_CLIENT_SECRET) {
-          setStatus('missing_secret');
-          setErrorMessage('Das Spotify Client Secret ist nicht konfiguriert. Bitte füge es in der Datei "src/services/spotify/constants.ts" hinzu.');
           return;
         }
         
@@ -153,36 +145,6 @@ const SpotifyCallback = () => {
                 <li>Füge diese URI als "Redirect URI" hinzu: <code className="bg-gray-700 px-2 py-1 rounded text-green-300">{window.location.origin}/spotify-callback</code></li>
                 <li>Speichere die Änderungen</li>
                 <li>Versuche die Verbindung erneut</li>
-              </ol>
-            </div>
-            <button 
-              onClick={() => navigate('/')} 
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors w-full"
-            >
-              Zurück zur App
-            </button>
-          </>
-        )}
-        
-        {status === 'missing_secret' && (
-          <>
-            <div className="bg-amber-500/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <svg className="h-8 w-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold mb-2">Client Secret fehlt</h1>
-            <p className="text-gray-400 mb-4">{errorMessage}</p>
-            <div className="text-sm text-left bg-gray-800/50 p-4 rounded-lg mb-4">
-              <p className="font-medium mb-2">So behebst du das Problem:</p>
-              <ol className="list-decimal list-inside space-y-1 text-gray-300">
-                <li>Öffne das <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">Spotify Developer Dashboard</a></li>
-                <li>Wähle deine App aus</li>
-                <li>Suche nach dem Client Secret oder klicke auf "Show Client Secret"</li>
-                <li>Kopiere das Client Secret</li>
-                <li>Öffne die Datei <code className="bg-gray-700 px-2 py-1 rounded text-green-300">src/services/spotify/constants.ts</code></li>
-                <li>Füge das Client Secret bei der Variable <code className="bg-gray-700 px-2 py-1 rounded text-green-300">SPOTIFY_CLIENT_SECRET</code> ein</li>
-                <li>Speichere die Datei und starte die App neu</li>
               </ol>
             </div>
             <button 
