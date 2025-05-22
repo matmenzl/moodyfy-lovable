@@ -1,1 +1,20 @@
+
 project_id = "dpwcidrrqgnznzefpnco"
+
+[api]
+enabled = true
+
+[db]
+enabled = true
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+
+[edge_functions]
+enabled = true
+
+[functions.spotify-token]
+verify_jwt = false

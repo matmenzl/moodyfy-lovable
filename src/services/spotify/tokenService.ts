@@ -1,6 +1,7 @@
 
 // Importing constants
-import { SPOTIFY_TOKEN_URL, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, REDIRECT_URI } from './constants';
+import { SPOTIFY_TOKEN_URL, SPOTIFY_CLIENT_ID, REDIRECT_URI } from './constants';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types for token data
 interface SpotifyTokenData {
@@ -43,39 +44,26 @@ export const hasValidSpotifyToken = (): boolean => {
   return !!accessToken && !!expiresAt && Date.now() < expiresAt;
 };
 
-// Token vom Callback-Code abrufen
+// Token vom Callback-Code abrufen über den Edge Function
 export const getTokenFromCode = async (code: string): Promise<boolean> => {
   try {
     console.log("Getting token from code with redirect URI:", REDIRECT_URI);
     
-    // Überprüfen, ob ein Client Secret vorhanden ist
-    if (!SPOTIFY_CLIENT_SECRET) {
-      console.error('Spotify Client Secret ist nicht konfiguriert. Token-Austausch nicht möglich.');
-      throw new Error('Spotify Client Secret ist nicht konfiguriert');
-    }
-    
-    // Verwenden der Authorization header mit Base64-encodiertem client_id:client_secret
-    const tokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        // Korrekte Base64-Kodierung mit Client ID und Secret
-        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: REDIRECT_URI
-      }).toString()
+    // Use Supabase Edge Function instead of direct API call
+    const { data, error } = await supabase.functions.invoke('spotify-token', {
+      body: { code }
     });
     
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error('Spotify token error:', errorData);
-      throw new Error(`Token request failed: ${errorData.error_description || errorData.error}`);
+    if (error) {
+      console.error('Error calling Spotify token edge function:', error);
+      throw new Error(`Token request failed: ${error.message}`);
     }
     
-    const data = await tokenResponse.json();
+    if (!data || !data.access_token) {
+      console.error('Invalid response from Spotify token edge function:', data);
+      throw new Error('Invalid response from Spotify token service');
+    }
+    
     saveSpotifyToken(data.access_token, data.refresh_token, data.expires_in);
     return true;
   } catch (error) {
@@ -93,21 +81,17 @@ export const refreshSpotifyToken = async (): Promise<boolean> => {
       throw new Error('Kein Refresh-Token vorhanden');
     }
     
-    // Überprüfen, ob ein Client Secret vorhanden ist
-    if (!SPOTIFY_CLIENT_SECRET) {
-      console.error('Spotify Client Secret ist nicht konfiguriert. Token-Erneuerung nicht möglich.');
-      throw new Error('Spotify Client Secret ist nicht konfiguriert');
-    }
-    
+    // Use the authorization header method again
     const response = await fetch(SPOTIFY_TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)}`
+        'Authorization': `Basic ${btoa(`${SPOTIFY_CLIENT_ID}:`)}`  // Client secret is omitted as it's handled server-side
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
-        refresh_token: refreshToken
+        refresh_token: refreshToken,
+        client_id: SPOTIFY_CLIENT_ID
       }).toString()
     });
     
